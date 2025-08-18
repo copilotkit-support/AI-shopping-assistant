@@ -31,9 +31,10 @@ interface ReportViewProps {
   products: Product[]
   onExit: () => void
   searchQuery: string
+  agentDecisions: any
 }
 
-export function ReportView({ products, onExit, searchQuery }: ReportViewProps) {
+export function ReportView({ products, onExit, searchQuery, agentDecisions }: ReportViewProps) {
   const generateComparisonReport = () => {
     const topRated = products.reduce((prev, current) => (prev.rating > current.rating ? prev : current))
     const bestValue = products.reduce((prev, current) => {

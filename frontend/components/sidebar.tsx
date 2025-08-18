@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
+import { CopilotChat } from "@copilotkit/react-ui"
 interface Message {
   id: string
   type: "user" | "assistant"
@@ -87,7 +87,7 @@ export function Sidebar({
   }, [messages])
 
   // Auto-generate comparison analysis when entering comparison mode
-  useEffect(() => {}, [])
+  useEffect(() => { }, [])
 
   // Auto-generate wishlist message when entering wishlist view
   useEffect(() => {
@@ -144,11 +144,10 @@ ${products.map((p) => `• ${p.name}: ${p.specs.battery}`).join("\n")}
 ${products.map((p) => `• ${p.name}: ${p.specs.processor}`).join("\n")}
 
 **📊 My Recommendation:**
-${
-  products.length === 2
-    ? `Based on the comparison, the ${products[0].rating > products[1].rating ? products[0].name : products[1].name} offers better overall value with its ${products[0].rating > products[1].rating ? "higher rating and" : ""} strong performance. However, consider your budget and specific needs.`
-    : `Among these ${products.length} options, I'd recommend focusing on your primary use case - whether that's performance, battery life, or value for money.`
-}
+${products.length === 2
+        ? `Based on the comparison, the ${products[0].rating > products[1].rating ? products[0].name : products[1].name} offers better overall value with its ${products[0].rating > products[1].rating ? "higher rating and" : ""} strong performance. However, consider your budget and specific needs.`
+        : `Among these ${products.length} options, I'd recommend focusing on your primary use case - whether that's performance, battery life, or value for money.`
+      }
 
 Would you like me to dive deeper into any specific aspect of this comparison?`
   }
@@ -270,7 +269,7 @@ What specific aspect of your saved products would you like to explore?`
   }
 
   return (
-    <div className="w-80 bg-[#FAFCFA] border-r border-[#D8D8E5] flex flex-col h-full">
+    <div className="flex flex-col min-h-screen w-80 bg-[#FAFCFA] border-r border-[#D8D8E5]">
       {/* Header */}
       <div className="p-4 border-b border-[#D8D8E5] bg-white">
         <div className="flex items-center gap-3 mb-2">
@@ -284,130 +283,8 @@ What specific aspect of your saved products would you like to explore?`
         </div>
         <p className="text-sm text-[#575758]">{getViewTitle()}</p>
       </div>
-
-      {/* Chat Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex gap-3 ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-              {message.type === "assistant" && (
-                <div className="w-8 h-8 rounded-full bg-[#86ECE4] flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-4 h-4 text-[#030507]" />
-                </div>
-              )}
-
-              <div
-                className={`max-w-[240px] rounded-lg p-3 ${
-                  message.type === "user"
-                    ? "bg-[#030507] text-white ml-8"
-                    : "bg-white border border-[#D8D8E5] text-[#030507]"
-                }`}
-              >
-                <div className="text-sm whitespace-pre-line">{message.content}</div>
-                <div className={`text-xs mt-1 ${message.type === "user" ? "text-gray-300" : "text-[#858589]"}`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
-
-              {message.type === "user" && (
-                <div className="w-8 h-8 rounded-full bg-[#BEC9FF] flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-4 h-4 text-[#030507]" />
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-[#86ECE4] flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot className="w-4 h-4 text-[#030507]" />
-              </div>
-              <div className="bg-white border border-[#D8D8E5] rounded-lg p-3">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-[#858589] rounded-full animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 bg-[#858589] rounded-full animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-[#858589] rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Quick Suggestions */}
-      {currentView === "products" && messages.length <= 2 && (
-        <div className="p-4 border-t border-[#D8D8E5] bg-[#F7F7F9]">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-[#575758]" />
-            <span className="text-xs font-semibold text-[#575758] uppercase tracking-wide">Quick Start</span>
-          </div>
-          <div className="space-y-2">
-            {suggestions.slice(0, 3).map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuickSuggestion(suggestion)}
-                className="w-full text-left p-2 rounded-lg bg-white border border-[#D8D8E5] hover:bg-[#E8E8EF] transition-colors text-xs text-[#030507]"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Context-Specific Suggestions */}
-      {((currentQuery && messages.length > 2 && currentView === "products") || currentView === "wishlist") && (
-        <div className="p-4 border-t border-[#D8D8E5] bg-[#F7F7F9]">
-          <div className="flex items-center gap-2 mb-3">
-            {currentView === "wishlist" ? (
-              <Heart className="w-4 h-4 text-[#FFA254]" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-[#1B606F]" />
-            )}
-            <span className="text-xs font-semibold text-[#575758] uppercase tracking-wide">{getSuggestionTitle()}</span>
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            {getCurrentSuggestions().map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuickSuggestion(suggestion)}
-                className="text-left p-2 rounded-lg bg-white border border-[#D8D8E5] hover:bg-[#E8E8EF] transition-colors text-xs text-[#030507]"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Chat Input */}
-      <div className="p-4 border-t border-[#D8D8E5] bg-white">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={
-              currentView === "wishlist" ? "Ask about your wishlist..." : "Ask me anything about these products..."
-            }
-            className="flex-1 bg-[#F7F7F9] border-[#D8D8E5] text-[#030507] placeholder:text-[#858589] text-sm"
-            disabled={isTyping}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            className="bg-[#030507] hover:bg-[#575758] text-white px-3"
-            disabled={isTyping || !inputValue.trim()}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
+      <div className="flex-1 overflow-auto">
+        <CopilotChat className="h-full" />
       </div>
     </div>
   )
