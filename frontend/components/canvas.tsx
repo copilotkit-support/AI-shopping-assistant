@@ -47,7 +47,7 @@ export function Canvas({
   onGoToWishlist,
   onGoToReport,
 }: CanvasProps) {
-  if (isLoading) {
+  if (!isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
         <div className="text-center">
@@ -59,7 +59,7 @@ export function Canvas({
     )
   }
 
-  if (!query) {
+  if (query) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
         <div className="text-center max-w-md">

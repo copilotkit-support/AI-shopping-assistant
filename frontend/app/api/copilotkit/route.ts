@@ -13,7 +13,13 @@ const serviceAdapter = new OpenAIAdapter()
 //       llamaIndexAgent : llamaIndexAgent 
 //     },
 //   });
-const runtime = new CopilotRuntime()
+const runtime = new CopilotRuntime({
+    remoteEndpoints : [
+        {
+            url : "http://localhost:8000/copilotkit",
+        }
+    ]
+})
 export const POST = async (req: NextRequest) => {
     const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
         runtime,

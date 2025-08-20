@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Canvas } from "@/components/canvas"
 import { WishlistView } from "@/components/wishlist-view"
 import { ReportView } from "@/components/report-view"
-
+import { useCoAgent, useCopilotAction } from "@copilotkit/react-core"
+import DialogBox from "./tool-response"
 const mockProducts = [
   {
     id: "1",
@@ -226,6 +227,27 @@ export function ShoppingAssistant() {
 
   const wishlistProducts = products.filter((product) => wishlist.includes(product.id))
 
+  useCoAgent({
+    name : "shopping_agent",
+    initialState : {
+      products : [],
+      favorites : []
+    }
+  })
+
+  useCopilotAction({
+    name: "list_products",
+    description: "A list of products that are scraped from web",
+    renderAndWaitForResponse : ({status, respond, args}) => {
+      useEffect(() => {
+        // if (status === "response") {
+          console.log(args,status)
+        // }
+      }, [status, args])
+      return <DialogBox contentList={args?.products?.map((product: any) => ({title: product.title, url: product.product_url}))} onAccept={() => {if (respond) respond(true)}} onReject={() => {if (respond) respond(false)}} onNeedInfo={() => {if (respond) respond(false)}} />
+    }
+    
+  })
   return (
     <div className="flex h-screen bg-[#FAFCFA] overflow-hidden">
       <Sidebar

@@ -1,0 +1,371 @@
+[
+  {
+    "title": "Bose QuietComfort Ultra Bluetooth Headphones, Wireless Headphones with Spatial Audio, Over Ear Noise Cancelling with Mic, Up to 24 Hours of Playtime, Black",
+    "product_url": "https://www.amazon.com/Bose-QuietComfort-Wireless-Cancelling-Headphones/dp/B0CCZ1L489",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/51ZR4lyxBHL._AC_SY450_.jpg"
+    ],
+    "price_text": "$349.00",
+    "price_value": 349,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.2,
+    "rating_count": 6766,
+    "model": "QuietComfort Ultra",
+    "sku": "B0CCZ1L489",
+    "specifications": {
+      "Color": "Black",
+      "Ear Placement": "Over Ear",
+      "Form Factor": "Over Ear",
+      "Impedance": "32 Ohm",
+      "Battery Life": "Up to 24 hours"
+    },
+    "review_text": "These wireless noise cancelling headphones feature Quiet Mode, Aware Mode and Immersion Mode, which combines full noise cancellation and Bose Immersive Audio.",
+    "review_sentiment": { "label": "positive", "score": 0.8 }
+  },
+  {
+    "title": "Sony LinkBuds Open Truly Wireless Earbud Headphones",
+    "product_url": "https://www.amazon.com/Sony-Headphones-Open-Ring-Developed-Supporters/dp/B0DGVH7FJV?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DGVH7FJV",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/21xymgBnoXL._SR480,440_.jpg"
+    ],
+    "price_text": "$168.00",
+    "price_value": 168,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 3.5,
+    "rating_count": 142,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Great sound quality and design!",
+    "review_sentiment": { "label": "positive", "score": 0.8 }
+  },
+  {
+    "title": "Bose QuietComfort Ultra Bluetooth Earbuds",
+    "product_url": "https://www.amazon.com/Bose-QuietComfort-Cancelling-World-Class-Cancellation/dp/B0D6WCQWJS?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D6WCQWJS",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/21ZZG1LHLvL._SR480,440_.jpg"
+    ],
+    "price_text": "$299.00",
+    "price_value": 299,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 3.8,
+    "rating_count": 8043,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Excellent noise cancellation and sound quality.",
+    "review_sentiment": { "label": "positive", "score": 0.9 }
+  },
+  {
+    "title": "Beats Studio Pro x Kim Kardashian – Bluetooth Noise Cancelling Headphones",
+    "product_url": "https://www.amazon.com/Beats-Studio-Pro-Kardashian-Compatibility/dp/B0D95134GD?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D95134GD",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31sPd+wKt0L._SR480,440_.jpg"
+    ],
+    "price_text": "$169.95",
+    "price_value": 169.95,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.5,
+    "rating_count": 22388,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Stylish and comfortable with great sound.",
+    "review_sentiment": { "label": "positive", "score": 0.85 }
+  },
+  {
+    "title": "Bowers & Wilkins Pi6 Wireless Earbuds",
+    "product_url": "https://www.amazon.com/Bowers-Wilkins-Bluetooth-Earphones-Cancelling/dp/B0DCPWZTWQ?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DCPWZTWQ",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31fJV6Bya5L._SR240,220_.jpg"
+    ],
+    "price_text": "$159.00",
+    "price_value": 159,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 3.8,
+    "rating_count": 42,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Good sound but a bit pricey.",
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+  {
+    "title": "Bose QuietComfort Bluetooth Earbuds",
+    "product_url": "https://www.amazon.com/Bose-New-QuietComfort-Earbuds-Black/dp/B0D8BZDPXB?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D8BZDPXB",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31rr5uEAZJL._SR240,220_.jpg"
+    ],
+    "price_text": "$129.00",
+    "price_value": 129,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.0,
+    "rating_count": 3418,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Great for long listening sessions.",
+    "review_sentiment": { "label": "positive", "score": 0.8 }
+  },
+  {
+    "title": "Skullcandy Crusher ANC 2 Wireless Over-Ear Bluetooth Headphones",
+    "product_url": "https://www.amazon.com/Skullcandy-Cancelling-Bluetooth-Headphones-Microphone/dp/B0DB4CV6ZM?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DB4CV6ZM",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31NMYVgcWuL._SR240,220_.jpg"
+    ],
+    "price_text": "$99.88",
+    "price_value": 99.88,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.7,
+    "rating_count": 1856,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Amazing bass and sound quality.",
+    "review_sentiment": { "label": "positive", "score": 0.9 }
+  },
+  {
+    "title": "JBL Tour Pro 3 - True Wireless Noise Cancelling Earbuds",
+    "product_url": "https://www.amazon.com/JBL-Tour-Pro-Cancelling-Dual-Driver/dp/B0D3633DVB?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D3633DVB",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/41oBopwi1yL._SR240,220_.jpg"
+    ],
+    "price_text": "$329.95",
+    "price_value": 329.95,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.0,
+    "rating_count": 350,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Great sound but a bit bulky.",
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+  {
+    "title": "Bowers & Wilkins Limited Edition Px8 Over-Ear Wireless Headphones",
+    "product_url": "https://www.amazon.com/Bowers-Wilkins-Headphones-Cancellation-Luxurious/dp/B0DFMXHV5R?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DFMXHV5R",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31gcj8XfMFL._SR240,220_.jpg"
+    ],
+    "price_text": "$374.00",
+    "price_value": 374,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.2,
+    "rating_count": 1548,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Luxurious feel and sound.",
+    "review_sentiment": { "label": "positive", "score": 0.85 }
+  },
+  {
+    "title": "Bose QuietComfort Ultra Bluetooth Headphones",
+    "product_url": "https://www.amazon.com/Bose-QuietComfort-Bluetooth-Headphones-Cancelling/dp/B0D4ZCH5HS?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D4ZCH5HS",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31jKpqeEPrL._SR240,220_.jpg"
+    ],
+    "price_text": "$449.00",
+    "price_value": 449,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.2,
+    "rating_count": 6970,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Best noise cancellation I've experienced.",
+    "review_sentiment": { "label": "positive", "score": 0.9 }
+  },
+  {
+    "title": "Bowers & Wilkins Pi8 Wireless Earbuds",
+    "product_url": "https://www.amazon.com/Bowers-Wilkins-Anthracite-Bluetooth-Cancelling/dp/B0DCPZC735?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DCPZC735",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31l9LziP4pL._SR240,220_.jpg"
+    ],
+    "price_text": "$399.00",
+    "price_value": 399,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.0,
+    "rating_count": 323,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Great sound but expensive.",
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+  {
+    "title": "Bang & Olufsen Beoplay H100 Premium Wireless Active Noise Cancelling Headphones",
+    "product_url": "https://www.amazon.com/Bang-Olufsen-Cancelling-Headphones-Protective/dp/B0DD4CFXWN?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DD4CFXWN",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/3152Py9FvtL._SR240,220_.jpg"
+    ],
+    "price_text": "$2,200.00",
+    "price_value": 2200,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.1,
+    "rating_count": 29,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Incredible sound quality but very pricey.",
+    "review_sentiment": { "label": "negative", "score": -0.5 }
+  },
+  {
+    "title": "Sony LinkBuds Fit Truly Wireless Noise Canceling Earbud Headphones",
+    "product_url": "https://www.amazon.com/Sony-Canceling-Headphones-Developed-Supporters/dp/B0DGVQ6LGL?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0DGVQ6LGL",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/21ha1PkGrBL._SR240,220_.jpg"
+    ],
+    "price_text": "$128.00",
+    "price_value": 128,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 3.8,
+    "rating_count": 199,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Good for the price, but not the best.",
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+  {
+    "title": "Bose QuietComfort Bluetooth Headphones",
+    "product_url": "https://www.amazon.com/Bose-QuietComfort-Cancelling-Headphones-Bluetooth/dp/B0D4Z9HG1X?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0D4Z9HG1X",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/31vGhla5wGL._SR240,220_.jpg"
+    ],
+    "price_text": "$199.00",
+    "price_value": 199,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.6,
+    "rating_count": 11485,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Comfortable and great sound.",
+    "review_sentiment": { "label": "positive", "score": 0.8 }
+  },
+  {
+    "title": "Skullcandy Crusher Evo Wireless Bluetooth Headphones",
+    "product_url": "https://www.amazon.com/Skullcandy-Over-Ear-Bluetooth-Headphones-Microphone/dp/B0CD1F3WCC?pf_rd_p=a4be026a-170d-4f29-863a-e954546e07c8&pf_rd_r=KJ1WSTPBDM8HBKD0KW0E&ref_=new-in-headphones_B0CD1F3WCC",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/41hz8SQ2pgL._SR240,220_.jpg"
+    ],
+    "price_text": "$79.98",
+    "price_value": 79.98,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.7,
+    "rating_count": 4205,
+    "model": null,
+    "sku": null,
+    "specifications": {},
+    "review_text": "Great value for the price!",
+    "review_sentiment": { "label": "positive", "score": 0.9 }
+  },
+
+  {
+    "title": "Sony WF-1000XM5 The Best Truly Wireless Bluetooth Noise Canceling Earbuds & in-Ear Headphones with Alexa Built-in, Black",
+    "product_url": "https://www.amazon.com/Sony-WF-1000XM5-Bluetooth-Canceling-Headphones/dp/B0C33XXS56",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/21iD0HdSIEL._AC_.jpg",
+      "https://m.media-amazon.com/images/I/61GJAFdM9pL.__AC_SY300_SX300_QL70_ML2_.jpg"
+    ],
+    "price_text": "$213.00",
+    "price_value": 213,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 3.8,
+    "rating_count": 4709,
+    "model": "WF-1000XM5",
+    "sku": "B0C33XXS56",
+    "specifications": {
+      "Noise Control": "Active Noise Cancellation",
+      "Battery Life": "8 Hours",
+      "Water Resistance Level": "IPX4",
+      "Bluetooth Version": "5.3",
+      "Audio Driver Type": "Dynamic Driver",
+      "Frequency Range": "20 Hz to 40 kHz",
+      "Charging Time": "1.5 Hours",
+      "Included Components": "Headphones, Charging case, USB Type-C cable, Noise isolation earbud tips"
+    },
+    "review_text": "Experience astonishing sound quality with the Sony WF-1000XM5, a pair of noise cancelling earbuds that redefine audio experience.",
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+
+  {
+    "title": "Bose QuietComfort Ultra Bluetooth Headphones, Wireless Headphones with Spatial Audio, Over Ear Noise Cancelling with Mic, Up to 24 Hours of Playtime, Black",
+    "product_url": "https://www.amazon.com/Bose-QuietComfort-Wireless-Cancelling-Headphones/dp/B0CCZ1L489",
+    "image_urls": [
+      "https://m.media-amazon.com/images/I/51ZR4lyxBHL._AC_SY450_.jpg"
+    ],
+    "price_text": "$349.00",
+    "price_value": 349,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": 4.2,
+    "rating_count": 6766,
+    "model": "QuietComfort Ultra",
+    "sku": "B0CCZ1L489",
+    "specifications": {
+      "Color": "Black",
+      "Ear Placement": "Over Ear",
+      "Form Factor": "Over Ear",
+      "Impedance": "32 Ohm",
+      "Battery Life": "Up to 24 hours",
+      "Bluetooth": "5.3",
+      "Noise Cancelling": "Yes",
+      "Microphone": "Yes"
+    },
+    "review_text": "These wireless noise cancelling headphones feature Quiet Mode, Aware Mode and Immersion Mode, which combines full noise cancellation and Bose Immersive Audio.",
+    "review_sentiment": { "label": "positive", "score": 0.8 }
+  },
+  {
+    "title": "Headphones to fit their vibe from $9.99",
+    "product_url": "https://www.target.com/c/headphones-electronics/-/N-5xteg",
+    "image_urls": [
+      "https://target.scene7.com/is/image/Target/GUEST_db80ed26-75fe-48b8-bada-6fb6121f4e6d?fmt=webp&qlt=80&wid=2400"
+    ],
+    "price_text": "from $9.99",
+    "price_value": 9.99,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": null,
+    "rating_count": null,
+    "model": null,
+    "sku": null,
+    "specifications": null,
+    "review_text": null,
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  },
+  {
+    "title": "Headphones & stands $15",
+    "product_url": "https://www.target.com/c/headphones-electronics/-/N-5xteg",
+    "image_urls": [
+      "https://target.scene7.com/is/image/Target/GUEST_39950ba8-dbf9-4d6b-a1f6-a92da4c4b366?fmt=webp&qlt=80&wid=2400"
+    ],
+    "price_text": "$15",
+    "price_value": 15,
+    "price_currency": "USD",
+    "availability": "In Stock",
+    "rating_value": null,
+    "rating_count": null,
+    "model": null,
+    "sku": null,
+    "specifications": null,
+    "review_text": null,
+    "review_sentiment": { "label": "neutral", "score": 0.0 }
+  }
+]
