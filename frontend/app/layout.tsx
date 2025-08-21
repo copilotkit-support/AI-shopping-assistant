@@ -5,8 +5,8 @@ import './globals.css'
 import "@copilotkit/react-ui/styles.css";
 import { CopilotKit } from "@copilotkit/react-core";
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Shopping Assistant',
+  description: 'Powered by LangGraph and CopilotKit',
   generator: 'v0.app',
 }
 

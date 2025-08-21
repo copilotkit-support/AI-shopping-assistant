@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage
 from copilotkit.langgraph import copilotkit_emit_state, copilotkit_customize_config, CopilotKitState
 from typing import List
-import os, json, re
+import os, json, re, asyncio
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urljoin
 import uuid
@@ -26,6 +26,7 @@ class AgentState(CopilotKitState):
     products: List
     favorites: List
     buffer_products: List
+    logs: List
 
 
 async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
@@ -44,7 +45,14 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("Missing OPENAI_API_KEY")
     model = ChatOpenAI(streaming=False)
-    
+    state["logs"].append({
+        "message" : "Analyzing user query",
+        "status" : "processing"
+    })
+    await copilotkit_emit_state(config, state)
+    await asyncio.sleep(1)
+    state["logs"][-1]["status"] = "completed"
+    await copilotkit_emit_state(config, state)
     query = state["messages"][-1].content
     products_for_prompt = []
     wishlist_for_prompt = []
@@ -60,6 +68,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     if(state["messages"][-1].type == 'tool'):
         if(state["messages"][-1].content == "Show more products"):
             state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content='Some more products also has been added to be shown in the canvas'))
+            state["logs"] = []
+            await copilotkit_emit_state(config, state)
             return Command(
                 goto=END,
                 update={
@@ -69,6 +79,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             )
         if(state["messages"][-1].content == "Rejected"):
             state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content='You have rejected the products. Please try any other product search.'))
+            state["logs"] = []
+            await copilotkit_emit_state(config, state)
             return Command(
                 goto=END,
                 update={
@@ -78,6 +90,9 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             )            
         response = await model.ainvoke(input=state['messages'])
         state["messages"].append(AIMessage(content=response.content, type="ai", id= str(uuid.uuid4())))
+        state["logs"] = []
+        await copilotkit_emit_state(config, state)
+            
         return Command(
             goto=END,
             update={"messages" : state["messages"]}
@@ -85,7 +100,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     
     messages = state["messages"]
     
-    system_message = f"The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}"
+    system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}"
     # system_message = ''
     state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
     response0 = await model.bind_tools([
@@ -95,6 +110,9 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         *messages
     ],config=config)
     if hasattr(response0, "tool_calls") and response0.tool_calls and response0.content == '':        
+        state["logs"] = []
+        await copilotkit_emit_state(config, state)
+            
         return Command(
             goto=END,
             update={
@@ -114,6 +132,14 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     tv = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     results_all: List[Dict[str, Any]] = []
 
+    state["logs"].append({
+        "message" : "Identifying the sites to search",
+        "status" : "processing"
+    })
+    await copilotkit_emit_state(config, state)
+    await asyncio.sleep(1)
+    state["logs"][-1]["status"] = "completed"
+    await copilotkit_emit_state(config, state)
     # 1) Broad search across retailers
     search = tv.search(
         query=query,
@@ -128,10 +154,25 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     if not urls:
         return []
 
+    state["logs"].append({
+        "message" : "Extracting the sites",
+        "status" : "processing"
+    })
+    await copilotkit_emit_state(config, state)
+    await asyncio.sleep(1)
     # 2) First extract pass
     ext1 = tv.extract(urls, extract_depth="advanced", include_images=True)
+    state["logs"][-1]["status"] = "completed"
+    await copilotkit_emit_state(config, state)
+    
     target_listing_pdps: List[str] = []
     done = False
+    state["logs"].append({
+        "message" : "Processing the data",
+        "status" : "processing"
+    })
+    await copilotkit_emit_state(config, state)
+    # await asyncio.sleep(1)
     for item in ext1.get("results", []):
         url = item["url"]
         raw = item.get("raw_content") or ""
@@ -191,11 +232,16 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     
     for item in results_all:
         item["id"] = str(uuid.uuid4())
-
+    state["logs"][-1]["status"] = "completed"
+    await copilotkit_emit_state(config, state)
+    
     state["buffer_products"] = results_all
     
     await copilotkit_emit_state(config, state)
     state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:10], "buffer_products" : state["buffer_products"][:15]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
+    state["logs"] = []
+    await copilotkit_emit_state(config, state)
+            
     return Command(
         goto=END,
         update={

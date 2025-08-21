@@ -8,6 +8,7 @@ import { ReportView } from "@/components/report-view"
 import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
 import DialogBox from "./tool-response"
 import { useCopilotChatSuggestions } from "@copilotkit/react-ui"
+import { ToolLog, ToolLogs } from "./tool-logs"
 const mockProducts = [
   {
     id: "1",
@@ -108,16 +109,16 @@ export function ShoppingAssistant() {
   const toggleWishlist = (productId: string) => {
     setState({
       ...state,
-      favorites : state?.favorites?.includes(productId) ? state?.favorites?.filter((id : any) => id !== productId) : [...state?.favorites, productId]
+      favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId]
     })
   }
 
   const deleteProduct = (productId: string) => {
-    const productToDelete = state?.products?.find((p : any) => p.id === productId)
+    const productToDelete = state?.products?.find((p: any) => p.id === productId)
     if (!productToDelete) return
     setState({
       ...state,
-      products : state?.products?.filter((p : any) => p.id !== productId)
+      products: state?.products?.filter((p: any) => p.id !== productId)
     })
     // Simulate AI finding replacement
     // const replacementProducts = [
@@ -233,88 +234,90 @@ export function ShoppingAssistant() {
   }
 
 
-  const {state, setState} = useCoAgent({
-    name : "shopping_agent",
-    initialState : {
-      products : [],
-      favorites : [] as string[],
-      buffer_products : []
+  const { state, setState } = useCoAgent({
+    name: "shopping_agent",
+    initialState: {
+      products: [],
+      favorites: [] as string[],
+      buffer_products: [],
+      logs: [] as ToolLog[]
     }
   })
-  const wishlistProducts = state?.products?.filter((product : any) => state?.favorites?.includes(product.id))
+  const wishlistProducts = state?.products?.filter((product: any) => state?.favorites?.includes(product.id))
 
-  // useCoAgentStateRender({
-  //   name : "shopping_agent",
-  //   render : (state) => {
-  //     useEffect(() => {
-  //       console.log(state)
-  //     }, [state])
-  //     return <></>
-  //   }
-  // })
+  useCoAgentStateRender({
+    name : "shopping_agent",
+    render : (state1 : any) => {
+      // useEffect(() => {
+        console.log(state1, "state1")
+      // }, [state1])
+
+      return <ToolLogs logs={state1?.state?.logs || []} />
+    }
+  })
 
 
   useCopilotAction({
-    name : "edit_product_canvas",
-    description : "Ability to edit the products like moving it to wishlist or removing it from playlist or removing it from the product canvas",
-    parameters : [
+    name: "edit_product_canvas",
+    description: "Ability to edit the products like moving it to wishlist or removing it from playlist or removing it from the product canvas",
+    parameters: [
       {
-        name : "remove_from_canvas",
-        type : "object[]",
-        description : "The id of the product to be edited",
-        attributes : [
+        name: "remove_from_canvas",
+        type: "object[]",
+        description: "The id of the product to be edited",
+        attributes: [
           {
-            name : "product_id",
-            type : "string",
-            description : "The id of the product to be removed from the canvas"
+            name: "product_id",
+            type: "string",
+            description: "The id of the product to be removed from the canvas"
           }
         ]
       },
       {
-        name : "move_to_wishlist",
-        type : "object[]",
-        description : "The id of the product that needs to be moved to wishlist",
-        attributes : [
+        name: "move_to_wishlist",
+        type: "object[]",
+        description: "The id of the product that needs to be moved to wishlist",
+        attributes: [
           {
-            name : "product_id",
-            type : "string",
-            description : "The id of the product to be moved to wishlist"
+            name: "product_id",
+            type: "string",
+            description: "The id of the product to be moved to wishlist"
           }
         ]
       },
       {
-        name : "remove_from_wishlist",
-        type : "object[]",
-        description : "The id of the product that needs to be removed from wishlist",
-        attributes : [
+        name: "remove_from_wishlist",
+        type: "object[]",
+        description: "The id of the product that needs to be removed from wishlist",
+        attributes: [
           {
-            name : "product_id",
-            type : "string",
-            description : "The id of the product to be removed from wishlist"
+            name: "product_id",
+            type: "string",
+            description: "The id of the product to be removed from wishlist"
           }
         ]
       }
     ],
-    handler : (args) => {
-      console.log(args,"argsargsargsargs")
-      if(args?.move_to_wishlist){
+    handler: (args) => {
+      console.log(args, "argsargsargsargs")
+      if (args?.move_to_wishlist) {
         setState({
           ...state,
-          favorites : [...state?.favorites, ...args?.move_to_wishlist?.map((product : any) => product?.product_id)]
+          favorites: [...state?.favorites, ...args?.move_to_wishlist?.map((product: any) => product?.product_id)]
         })
       }
-      if(args?.remove_from_wishlist){
-        let itemsToRemove = args?.remove_from_wishlist?.map((product : any) => product?.product_id)
+      if (args?.remove_from_wishlist) {
+        let itemsToRemove = args?.remove_from_wishlist?.map((product: any) => product?.product_id)
         setState({
           ...state,
-          favorites : state?.favorites?.filter((id : any) => !itemsToRemove?.includes(id))
+          favorites: state?.favorites?.filter((id: any) => !itemsToRemove?.includes(id))
         })
       }
-      if(args?.remove_from_canvas){
-        let itemsToRemove = args?.remove_from_canvas?.map((product : any) => product?.product_id)
-          setState({
+      if (args?.remove_from_canvas) {
+        let itemsToRemove = args?.remove_from_canvas?.map((product: any) => product?.product_id)
+        setState({
           ...state,
-          products : state?.products?.filter((product : any) => !itemsToRemove?.includes(product?.id))
+          products: state?.products?.filter((product: any) => !itemsToRemove?.includes(product?.id))
         })
       }
       return "Product edited successfully"
@@ -322,43 +325,47 @@ export function ShoppingAssistant() {
   })
 
   useEffect(() => {
-    console.log(state,"statestatestatestate")
+    console.log(state, "statestatestatestate")
   }, [state])
 
   useCopilotAction({
     name: "list_products",
     description: "A list of products that are scraped from web",
-    renderAndWaitForResponse : ({status, respond, args}) => {
-      return <DialogBox contentList={args?.products?.map((product: any) => ({title: product.title, url: product.product_url}))} onAccept={() => {if (respond) {
-        respond(true)
-        setState({
-          ...state,
-          products : args?.products
-        })
-        setProducts(args?.products)
-      }}} onReject={() => {if (respond) respond("Rejected")}} onNeedInfo={() => {if (respond) {
-        respond("Show more products")
-        setState({
-          ...state,
-          products : args?.buffer_products
-        })
-        setProducts(args?.buffer_products)
-      }}} />
+    renderAndWaitForResponse: ({ status, respond, args }) => {
+      return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} onAccept={() => {
+        if (respond) {
+          respond(true)
+          setState({
+            ...state,
+            products: args?.products
+          })
+          setProducts(args?.products)
+        }
+      }} onReject={() => { if (respond) respond("Rejected") }} onNeedInfo={() => {
+        if (respond) {
+          respond("Show more products")
+          setState({
+            ...state,
+            products: args?.buffer_products
+          })
+          setProducts(args?.buffer_products)
+        }
+      }} />
     }
-    
+
   })
 
   useCopilotChatSuggestions({
-    available : "enabled",
-    instructions : "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc.",
+    available: "enabled",
+    instructions: "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc.",
   })
 
-  const {visibleMessages, isLoading} = useCopilotChat()
-  
+  const { visibleMessages, isLoading } = useCopilotChat()
+
   useEffect(() => {
-    console.log(visibleMessages.filter((message : any) => message?.role === "user"))
+    console.log(visibleMessages.filter((message: any) => message?.role === "user"))
     // @ts-ignore
-    setQuery(visibleMessages.filter((message : any) => message?.role === "user")[0]?.content)
+    setQuery(visibleMessages.filter((message: any) => message?.role === "user")[0]?.content)
     // visibleMessages.filter((message : any) => message.type)
   }, [isLoading])
 
@@ -382,7 +389,7 @@ export function ShoppingAssistant() {
             clearAllWishlist={() => {
               setState({
                 ...state,
-                favorites : []
+                favorites: []
               })
             }}
             products={wishlistProducts}

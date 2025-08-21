@@ -185,7 +185,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
       {/* Product Image */}
       <div className="aspect-square bg-[#F7F7F9] rounded-lg mb-4 overflow-hidden">
-        <img src={product?.image_urls?.[0] || "/placeholder.svg"} alt={product.title} className="w-full h-full object-cover" />
+        <img style={{objectFit: "contain"}} src={product?.image_urls?.[0] || "/placeholder.svg"} alt={product.title} className="w-full h-full object-cover p-2" />
       </div>
 
       {/* Product Info */}
