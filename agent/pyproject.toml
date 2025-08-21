@@ -17,6 +17,7 @@ bs4 = "0.0.2"
 fastapi = "0.115.12"
 uvicorn = "0.35.0"
 copilotkit = "^0.1.60"
+langchain-openai = "^0.3.30"
 
 
 [build-system]

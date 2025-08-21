@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button"
 
 interface Product {
   id: string
-  name: string
+  image_urls: string[]
+  title: string
+  product_url: string,
+  price_text: string,
+  rating_value: number,
+  rating_count: number,
   price: string
   image: string
   pros: string[]
@@ -47,7 +52,7 @@ export function Canvas({
   onGoToWishlist,
   onGoToReport,
 }: CanvasProps) {
-  if (!isLoading) {
+  if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
         <div className="text-center">
@@ -59,7 +64,7 @@ export function Canvas({
     )
   }
 
-  if (query) {
+  if (!query) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
         <div className="text-center max-w-md">

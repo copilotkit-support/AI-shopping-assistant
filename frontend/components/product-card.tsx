@@ -8,7 +8,12 @@ import { Progress } from "@/components/ui/progress"
 
 interface Product {
   id: string
-  name: string
+  image_urls: string[]
+  title: string
+  product_url: string,
+  price_text: string,
+  rating_value: number,
+  rating_count: number,
   price: string
   image: string
   pros: string[]
@@ -130,7 +135,7 @@ const getSentimentAnalysis = (productId: string) => {
 }
 
 export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteProduct }: ProductCardProps) {
-  const sentimentData = getSentimentAnalysis(product.id)
+  const sentimentData = getSentimentAnalysis("1")
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -172,15 +177,15 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
       {/* Product Image */}
       <div className="aspect-square bg-[#F7F7F9] rounded-lg mb-4 overflow-hidden">
-        <img src={product.image || "/placeholder.svg"} alt={product.name} className="w-full h-full object-cover" />
+        <img src={product?.image_urls?.[0] || "/placeholder.svg"} alt={product.title} className="w-full h-full object-cover" />
       </div>
 
       {/* Product Info */}
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold text-[#030507] text-lg mb-1 font-['Roobert']">{product.name}</h3>
+          <h3 className="font-semibold text-[#030507] text-lg mb-1 font-['Roobert']">{product.title}</h3>
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-[#030507] font-['Roobert']">{product.price}</span>
+            <span className="text-2xl font-bold text-[#030507] font-['Roobert']">{product.price_text}</span>
             <Badge variant="outline" className="text-xs">
               {product.source}
             </Badge>
@@ -195,13 +200,13 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 <Star
                   key={i}
                   className={`w-4 h-4 ${
-                    i < Math.floor(product.rating) ? "text-[#FFF388] fill-current" : "text-[#D8D8E5]"
+                    i < Math.floor(product.rating_value) ? "text-[#FFF388] fill-current" : "text-[#D8D8E5]"
                   }`}
                 />
               ))}
             </div>
             <span className="text-sm text-[#575758]">
-              {product.rating} ({product.reviews} reviews)
+              {product.rating_value} ({product.rating_count} reviews)
             </span>
           </div>
 
@@ -220,7 +225,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-[#030507] font-['Roobert'] flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-[#1B606F]" />
-                  AI Review Insights: {product.name}
+                  AI Review Insights: {product.title}
                 </DialogTitle>
               </DialogHeader>
 
@@ -261,7 +266,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
                 {/* Key Insights */}
                 <div>
-                  <h3 className="font-semibold text-[#030507] mb-3">Key Insights from {product.reviews} Reviews</h3>
+                  <h3 className="font-semibold text-[#030507] mb-3">Key Insights from {product.rating_count} Reviews</h3>
                   <ul className="space-y-2">
                     {sentimentData.keyInsights.map((insight, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm text-[#575758]">
@@ -320,7 +325,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 </div>
 
                 <div className="text-xs text-[#858589] text-center">
-                  Analysis based on {product.reviews} verified reviews from {product.source}
+                  Analysis based on {product.rating_count} verified reviews from {product.product_url}
                 </div>
               </div>
             </DialogContent>
@@ -335,12 +340,12 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
               <span className="text-sm font-medium text-[#030507]">Pros</span>
             </div>
             <ul className="space-y-1">
-              {product.pros.slice(0, 2).map((pro, index) => (
+              {/* {product.pros.slice(0, 2).map((pro, index) => (
                 <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
                   <span className="text-[#1B606F] mt-1">•</span>
                   {pro}
                 </li>
-              ))}
+              ))} */}
             </ul>
           </div>
 
@@ -350,12 +355,12 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
               <span className="text-sm font-medium text-[#030507]">Cons</span>
             </div>
             <ul className="space-y-1">
-              {product.cons.slice(0, 2).map((con, index) => (
+              {/* {product.cons.slice(0, 2).map((con, index) => (
                 <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
                   <span className="text-[#FFA254] mt-1">•</span>
                   {con}
                 </li>
-              ))}
+              ))} */}
             </ul>
           </div>
         </div>

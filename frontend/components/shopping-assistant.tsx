@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Canvas } from "@/components/canvas"
 import { WishlistView } from "@/components/wishlist-view"
 import { ReportView } from "@/components/report-view"
-import { useCoAgent, useCopilotAction } from "@copilotkit/react-core"
+import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
 import DialogBox from "./tool-response"
 const mockProducts = [
   {
@@ -89,7 +89,7 @@ const mockSuggestions = [
 export function ShoppingAssistant() {
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
-  const [products, setProducts] = useState(mockProducts)
+  const [products, setProducts] = useState<any>(mockProducts)
   const [wishlist, setWishlist] = useState<string[]>([])
   const [agentDecisions, setAgentDecisions] = useState({
     searchStrategy: "",
@@ -109,7 +109,7 @@ export function ShoppingAssistant() {
   }
 
   const deleteProduct = (productId: string) => {
-    const productToDelete = products.find((p) => p.id === productId)
+    const productToDelete = products.find((p : any) => p.id === productId)
     if (!productToDelete) return
 
     // Simulate AI finding replacement
@@ -161,7 +161,7 @@ export function ShoppingAssistant() {
     const replacement = replacementProducts[Math.floor(Math.random() * replacementProducts.length)]
 
     // Update products
-    setProducts((prev) => prev.map((p) => (p.id === productId ? replacement : p)))
+    setProducts((prev : any) => prev.map((p : any) => (p.id === productId ? replacement : p)))
 
     // Update agent decisions
     setAgentDecisions((prev) => ({
@@ -225,29 +225,57 @@ export function ShoppingAssistant() {
     }, 2000)
   }
 
-  const wishlistProducts = products.filter((product) => wishlist.includes(product.id))
+  const wishlistProducts = products.filter((product : any) => wishlist.includes(product.id))
 
-  useCoAgent({
+  const {state} = useCoAgent({
     name : "shopping_agent",
     initialState : {
       products : [],
-      favorites : []
+      favorites : [],
+      buffer_products : []
     }
   })
+
+  // useCoAgentStateRender({
+  //   name : "shopping_agent",
+  //   render : (state) => {
+  //     useEffect(() => {
+  //       console.log(state)
+  //     }, [state])
+  //     return <></>
+  //   }
+  // })
+
+
+  useEffect(() => {
+    console.log(state,"statestatestatestate")
+  }, [state])
 
   useCopilotAction({
     name: "list_products",
     description: "A list of products that are scraped from web",
     renderAndWaitForResponse : ({status, respond, args}) => {
-      useEffect(() => {
-        // if (status === "response") {
-          console.log(args,status)
-        // }
-      }, [status, args])
-      return <DialogBox contentList={args?.products?.map((product: any) => ({title: product.title, url: product.product_url}))} onAccept={() => {if (respond) respond(true)}} onReject={() => {if (respond) respond(false)}} onNeedInfo={() => {if (respond) respond(false)}} />
+      return <DialogBox contentList={args?.products?.map((product: any) => ({title: product.title, url: product.product_url}))} onAccept={() => {if (respond) {
+        respond(true)
+        setProducts(args?.products)
+      }}} onReject={() => {if (respond) respond("Rejected")}} onNeedInfo={() => {if (respond) {
+        respond("Show more products")
+        setProducts(state?.buffer_products)
+      }}} />
     }
     
   })
+
+  const {visibleMessages, isLoading} = useCopilotChat()
+  
+  useEffect(() => {
+    console.log(visibleMessages.filter((message : any) => message?.role === "user"))
+    // @ts-ignore
+    setQuery(visibleMessages.filter((message : any) => message?.role === "user")[0]?.content)
+    // visibleMessages.filter((message : any) => message.type)
+  }, [isLoading])
+
+
   return (
     <div className="flex h-screen bg-[#FAFCFA] overflow-hidden">
       <Sidebar
@@ -272,7 +300,7 @@ export function ShoppingAssistant() {
         ) : (
           <Canvas
             products={products}
-            isLoading={isSearching}
+            isLoading={isLoading}
             query={query}
             wishlist={wishlist}
             onToggleWishlist={toggleWishlist}
