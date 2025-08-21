@@ -16,7 +16,7 @@ const serviceAdapter = new OpenAIAdapter()
 const runtime = new CopilotRuntime({
     remoteEndpoints : [
         {
-            url : "http://localhost:8000/copilotkit",
+            url : process.env.NEXT_PUBLIC_SHOPPING_AGENT_URL || "http://localhost:8000/copilotkit",
         }
     ]
 })
