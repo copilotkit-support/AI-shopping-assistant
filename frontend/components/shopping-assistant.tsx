@@ -7,6 +7,7 @@ import { WishlistView } from "@/components/wishlist-view"
 import { ReportView } from "@/components/report-view"
 import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
 import DialogBox from "./tool-response"
+import { useCopilotChatSuggestions } from "@copilotkit/react-ui"
 const mockProducts = [
   {
     id: "1",
@@ -105,77 +106,83 @@ export function ShoppingAssistant() {
   const [currentView, setCurrentView] = useState<"products" | "wishlist" | "report">("products")
 
   const toggleWishlist = (productId: string) => {
-    setWishlist((prev) => (prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]))
+    setState({
+      ...state,
+      favorites : state?.favorites?.includes(productId) ? state?.favorites?.filter((id : any) => id !== productId) : [...state?.favorites, productId]
+    })
   }
 
   const deleteProduct = (productId: string) => {
-    const productToDelete = products.find((p : any) => p.id === productId)
+    const productToDelete = state?.products?.find((p : any) => p.id === productId)
     if (!productToDelete) return
-
+    setState({
+      ...state,
+      products : state?.products?.filter((p : any) => p.id !== productId)
+    })
     // Simulate AI finding replacement
-    const replacementProducts = [
-      {
-        id: "replacement-1",
-        name: "ASUS ZenBook 14",
-        price: "$899",
-        image: "/placeholder.svg?height=200&width=200&text=ASUS+ZenBook",
-        pros: ["Lightweight design", "Good battery life", "Affordable price", "Solid performance"],
-        cons: ["Average display", "Limited ports", "Plastic build"],
-        source: "ASUS Store",
-        rating: 4.3,
-        reviews: 456,
-        specs: {
-          processor: "Intel Core i5-1235U",
-          ram: "8GB LPDDR4X",
-          storage: "512GB SSD",
-          display: '14" Full HD IPS',
-          battery: "Up to 12 hours",
-          weight: "3.17 lbs",
-          ports: "2x USB-A, 1x USB-C, HDMI",
-          os: "Windows 11",
-        },
-      },
-      {
-        id: "replacement-2",
-        name: "HP Spectre x360",
-        price: "$1,399",
-        image: "/placeholder.svg?height=200&width=200&text=HP+Spectre",
-        pros: ["2-in-1 convertible", "Premium build", "Great display", "Long battery life"],
-        cons: ["Gets warm", "Expensive", "Heavy for tablet mode"],
-        source: "HP.com",
-        rating: 4.4,
-        reviews: 789,
-        specs: {
-          processor: "Intel Core i7-1255U",
-          ram: "16GB LPDDR4X",
-          storage: "1TB SSD",
-          display: '13.5" 3K2K OLED Touch',
-          battery: "Up to 14 hours",
-          weight: "3.01 lbs",
-          ports: "2x Thunderbolt 4, 1x USB-A",
-          os: "Windows 11",
-        },
-      },
-    ]
+    // const replacementProducts = [
+    //   {
+    //     id: "replacement-1",
+    //     name: "ASUS ZenBook 14",
+    //     price: "$899",
+    //     image: "/placeholder.svg?height=200&width=200&text=ASUS+ZenBook",
+    //     pros: ["Lightweight design", "Good battery life", "Affordable price", "Solid performance"],
+    //     cons: ["Average display", "Limited ports", "Plastic build"],
+    //     source: "ASUS Store",
+    //     rating: 4.3,
+    //     reviews: 456,
+    //     specs: {
+    //       processor: "Intel Core i5-1235U",
+    //       ram: "8GB LPDDR4X",
+    //       storage: "512GB SSD",
+    //       display: '14" Full HD IPS',
+    //       battery: "Up to 12 hours",
+    //       weight: "3.17 lbs",
+    //       ports: "2x USB-A, 1x USB-C, HDMI",
+    //       os: "Windows 11",
+    //     },
+    //   },
+    //   {
+    //     id: "replacement-2",
+    //     name: "HP Spectre x360",
+    //     price: "$1,399",
+    //     image: "/placeholder.svg?height=200&width=200&text=HP+Spectre",
+    //     pros: ["2-in-1 convertible", "Premium build", "Great display", "Long battery life"],
+    //     cons: ["Gets warm", "Expensive", "Heavy for tablet mode"],
+    //     source: "HP.com",
+    //     rating: 4.4,
+    //     reviews: 789,
+    //     specs: {
+    //       processor: "Intel Core i7-1255U",
+    //       ram: "16GB LPDDR4X",
+    //       storage: "1TB SSD",
+    //       display: '13.5" 3K2K OLED Touch',
+    //       battery: "Up to 14 hours",
+    //       weight: "3.01 lbs",
+    //       ports: "2x Thunderbolt 4, 1x USB-A",
+    //       os: "Windows 11",
+    //     },
+    //   },
+    // ]
 
-    const replacement = replacementProducts[Math.floor(Math.random() * replacementProducts.length)]
+    // const replacement = replacementProducts[Math.floor(Math.random() * replacementProducts.length)]
 
     // Update products
-    setProducts((prev : any) => prev.map((p : any) => (p.id === productId ? replacement : p)))
+    // setProducts((prev : any) => prev.map((p : any) => (p.id === productId ? replacement : p)))
 
     // Update agent decisions
-    setAgentDecisions((prev) => ({
-      ...prev,
-      replacementHistory: [
-        ...prev.replacementHistory,
-        {
-          removedProduct: productToDelete.name,
-          replacedWith: replacement.name,
-          reason: `Found better alternative with similar specs but improved value proposition and user ratings`,
-          timestamp: new Date(),
-        },
-      ],
-    }))
+    // setAgentDecisions((prev) => ({
+    //   ...prev,
+    //   replacementHistory: [
+    //     ...prev.replacementHistory,
+    //     {
+    //       removedProduct: productToDelete.name,
+    //       replacedWith: replacement.name,
+    //       reason: `Found better alternative with similar specs but improved value proposition and user ratings`,
+    //       timestamp: new Date(),
+    //     },
+    //   ],
+    // }))
   }
 
   const goToReport = () => {
@@ -225,16 +232,16 @@ export function ShoppingAssistant() {
     }, 2000)
   }
 
-  const wishlistProducts = products.filter((product : any) => wishlist.includes(product.id))
 
-  const {state} = useCoAgent({
+  const {state, setState} = useCoAgent({
     name : "shopping_agent",
     initialState : {
       products : [],
-      favorites : [],
+      favorites : [] as string[],
       buffer_products : []
     }
   })
+  const wishlistProducts = state?.products?.filter((product : any) => state?.favorites?.includes(product.id))
 
   // useCoAgentStateRender({
   //   name : "shopping_agent",
@@ -247,6 +254,73 @@ export function ShoppingAssistant() {
   // })
 
 
+  useCopilotAction({
+    name : "edit_product_canvas",
+    description : "Ability to edit the products like moving it to wishlist or removing it from playlist or removing it from the product canvas",
+    parameters : [
+      {
+        name : "remove_from_canvas",
+        type : "object[]",
+        description : "The id of the product to be edited",
+        attributes : [
+          {
+            name : "product_id",
+            type : "string",
+            description : "The id of the product to be removed from the canvas"
+          }
+        ]
+      },
+      {
+        name : "move_to_wishlist",
+        type : "object[]",
+        description : "The id of the product that needs to be moved to wishlist",
+        attributes : [
+          {
+            name : "product_id",
+            type : "string",
+            description : "The id of the product to be moved to wishlist"
+          }
+        ]
+      },
+      {
+        name : "remove_from_wishlist",
+        type : "object[]",
+        description : "The id of the product that needs to be removed from wishlist",
+        attributes : [
+          {
+            name : "product_id",
+            type : "string",
+            description : "The id of the product to be removed from wishlist"
+          }
+        ]
+      }
+    ],
+    handler : (args) => {
+      console.log(args,"argsargsargsargs")
+      if(args?.move_to_wishlist){
+        setState({
+          ...state,
+          favorites : [...state?.favorites, ...args?.move_to_wishlist?.map((product : any) => product?.product_id)]
+        })
+      }
+      if(args?.remove_from_wishlist){
+        let itemsToRemove = args?.remove_from_wishlist?.map((product : any) => product?.product_id)
+        setState({
+          ...state,
+          favorites : state?.favorites?.filter((id : any) => !itemsToRemove?.includes(id))
+        })
+      }
+      if(args?.remove_from_canvas){
+        let itemsToRemove = args?.remove_from_canvas?.map((product : any) => product?.product_id)
+          setState({
+          ...state,
+          products : state?.products?.filter((product : any) => !itemsToRemove?.includes(product?.id))
+        })
+      }
+      return "Product edited successfully"
+    }
+  })
+
   useEffect(() => {
     console.log(state,"statestatestatestate")
   }, [state])
@@ -257,13 +331,26 @@ export function ShoppingAssistant() {
     renderAndWaitForResponse : ({status, respond, args}) => {
       return <DialogBox contentList={args?.products?.map((product: any) => ({title: product.title, url: product.product_url}))} onAccept={() => {if (respond) {
         respond(true)
+        setState({
+          ...state,
+          products : args?.products
+        })
         setProducts(args?.products)
       }}} onReject={() => {if (respond) respond("Rejected")}} onNeedInfo={() => {if (respond) {
         respond("Show more products")
-        setProducts(state?.buffer_products)
+        setState({
+          ...state,
+          products : args?.buffer_products
+        })
+        setProducts(args?.buffer_products)
       }}} />
     }
     
+  })
+
+  useCopilotChatSuggestions({
+    available : "enabled",
+    instructions : "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc.",
   })
 
   const {visibleMessages, isLoading} = useCopilotChat()
@@ -284,7 +371,7 @@ export function ShoppingAssistant() {
         currentQuery={query}
         isSearching={isSearching}
         currentView={currentView}
-        wishlistCount={wishlist.length}
+        wishlistCount={state?.favorites?.length}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -292,6 +379,12 @@ export function ShoppingAssistant() {
           <ReportView products={products} onExit={exitToProducts} searchQuery={query} agentDecisions={agentDecisions} />
         ) : currentView === "wishlist" ? (
           <WishlistView
+            clearAllWishlist={() => {
+              setState({
+                ...state,
+                favorites : []
+              })
+            }}
             products={wishlistProducts}
             onExit={exitToProducts}
             onToggleWishlist={toggleWishlist}
@@ -299,10 +392,10 @@ export function ShoppingAssistant() {
           />
         ) : (
           <Canvas
-            products={products}
-            isLoading={isLoading}
+            products={state?.products}
+            isLoading={isLoading && state?.products?.length == 0}
             query={query}
-            wishlist={wishlist}
+            wishlist={state?.favorites}
             onToggleWishlist={toggleWishlist}
             onDeleteProduct={deleteProduct}
             onGoToWishlist={goToWishlist}

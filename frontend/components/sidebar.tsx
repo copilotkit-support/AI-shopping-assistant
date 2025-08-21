@@ -284,7 +284,9 @@ What specific aspect of your saved products would you like to explore?`
         <p className="text-sm text-[#575758]">{getViewTitle()}</p>
       </div>
       <div className="flex-1 overflow-auto">
-        <CopilotChat className="h-full" />
+        <CopilotChat className="h-full" labels={{
+          initial : "Hi! I'm your AI shopping assistant. I can help you find and compare products across multiple websites. What are you looking for today? Laptops, Phones, Headphones, etc.",
+        }}/>
       </div>
     </div>
   )

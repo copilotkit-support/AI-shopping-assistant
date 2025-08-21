@@ -12,6 +12,21 @@ interface Product {
   pros: string[]
   cons: string[]
   source: string
+  image_urls: string[]
+  title: string
+  product_url: string
+  price_text: string
+  rating_value: number
+  rating_count: number
+  specifications: object
+  review_sentiment: {
+    positive_score: number,
+    neutral_score: number,
+    negative_score: number,
+  },
+  key_insights_from_reviews: string[],
+  recommendation_score_out_of_100: number,
+  would_buy_again_score_out_of_100: number,
   rating: number
   reviews: number
   specs: {
@@ -31,14 +46,11 @@ interface WishlistViewProps {
   onExit: () => void
   onToggleWishlist: (productId: string) => void
   onDeleteProduct: (productId: string) => void
+  clearAllWishlist: () => void
 }
 
-export function WishlistView({ products, onExit, onToggleWishlist, onDeleteProduct }: WishlistViewProps) {
-  const clearAllWishlist = () => {
-    products.forEach((product) => {
-      onDeleteProduct(product.id)
-    })
-  }
+export function WishlistView({ products, onExit, onToggleWishlist, onDeleteProduct, clearAllWishlist }: WishlistViewProps) {
+
 
   if (products.length === 0) {
     return (
@@ -108,7 +120,7 @@ export function WishlistView({ products, onExit, onToggleWishlist, onDeleteProdu
 
       {/* Wishlist Content */}
       <div className="p-6">
-        <div className="mb-6">
+        <div className="mb-6 hidden">
           <div className="bg-gradient-to-r from-[#86ECCE] to-[#FFF388] p-4 rounded-xl">
             <h3 className="font-semibold text-[#030507] mb-1">💡 Pro Tip</h3>
             <p className="text-sm text-[#030507]">

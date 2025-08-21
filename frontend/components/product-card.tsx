@@ -1,6 +1,6 @@
 "use client"
 
-import { Star, ExternalLink, ThumbsUp, ThumbsDown, Heart, X, Lightbulb } from "lucide-react"
+import { Star, ExternalLink, ThumbsUp, ThumbsDown, Heart, X, Lightbulb, SettingsIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -21,6 +21,15 @@ interface Product {
   source: string
   rating: number
   reviews: number
+  specifications: object
+  review_sentiment: {
+    positive_score: number,
+    neutral_score: number,
+    negative_score: number,
+  },
+  key_insights_from_reviews: string[],
+  recommendation_score_out_of_100: number,
+  would_buy_again_score_out_of_100: number,
   specs: {
     processor: string
     ram: string
@@ -165,11 +174,10 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
         <button
           onClick={() => onToggleWishlist(product.id)}
-          className={`p-2 rounded-full transition-colors ${
-            isWishlisted
-              ? "bg-[#FFA254] text-white hover:bg-[#FF8C42]"
-              : "bg-[#F7F7F9] text-[#858589] hover:bg-[#E8E8EF] hover:text-[#575758]"
-          }`}
+          className={`p-2 rounded-full transition-colors ${isWishlisted
+            ? "bg-[#FFA254] text-white hover:bg-[#FF8C42]"
+            : "bg-[#F7F7F9] text-[#858589] hover:bg-[#E8E8EF] hover:text-[#575758]"
+            }`}
         >
           <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
         </button>
@@ -187,7 +195,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-[#030507] font-['Roobert']">{product.price_text}</span>
             <Badge variant="outline" className="text-xs">
-              {product.source}
+              amazon.com
             </Badge>
           </div>
         </div>
@@ -199,9 +207,8 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`w-4 h-4 ${
-                    i < Math.floor(product.rating_value) ? "text-[#FFF388] fill-current" : "text-[#D8D8E5]"
-                  }`}
+                  className={`w-4 h-4 ${i < Math.floor(product.rating_value) ? "text-[#FFF388] fill-current" : "text-[#D8D8E5]"
+                    }`}
                 />
               ))}
             </div>
@@ -234,14 +241,11 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 <div className="bg-[#F7F7F9] rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-[#030507]">Overall Sentiment</h3>
-                    <span className={`font-semibold ${getSentimentColor(sentimentData.overallSentiment)}`}>
-                      {sentimentData.overallSentiment}
-                    </span>
                   </div>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm text-[#575758]">Sentiment Score</span>
-                    <Progress value={sentimentData.sentimentScore} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-[#030507]">{sentimentData.sentimentScore}/100</span>
+                    <Progress value={product?.review_sentiment?.positive_score * 100 + product?.review_sentiment?.neutral_score * 100} className="flex-1 h-2" />
+                    <span className="text-sm font-medium text-[#030507]">{product?.review_sentiment?.positive_score * 100 + product?.review_sentiment?.neutral_score * 100}/100</span>
                   </div>
                 </div>
 
@@ -250,15 +254,15 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                   <h3 className="font-semibold text-[#030507] mb-3">Review Sentiment Breakdown</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#1B606F] mb-1">{sentimentData.positivePercentage}%</div>
+                      <div className="text-2xl font-bold text-[#1B606F] mb-1">{product?.review_sentiment?.positive_score * 100}%</div>
                       <div className="text-sm text-[#575758]">Positive</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#858589] mb-1">{sentimentData.neutralPercentage}%</div>
+                      <div className="text-2xl font-bold text-[#858589] mb-1">{product?.review_sentiment?.neutral_score * 100}%</div>
                       <div className="text-sm text-[#575758]">Neutral</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#FFA254] mb-1">{sentimentData.negativePercentage}%</div>
+                      <div className="text-2xl font-bold text-[#FFA254] mb-1">{product?.review_sentiment?.negative_score * 100}%</div>
                       <div className="text-sm text-[#575758]">Negative</div>
                     </div>
                   </div>
@@ -268,7 +272,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 <div>
                   <h3 className="font-semibold text-[#030507] mb-3">Key Insights from {product.rating_count} Reviews</h3>
                   <ul className="space-y-2">
-                    {sentimentData.keyInsights.map((insight, index) => (
+                    {product?.key_insights_from_reviews.map((insight, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm text-[#575758]">
                         <span className="text-[#1B606F] mt-1">•</span>
                         {insight}
@@ -281,44 +285,31 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-semibold text-[#1B606F] mb-3 flex items-center gap-2">
-                      <ThumbsUp className="w-4 h-4" />
-                      Most Praised Features
+                      <SettingsIcon className="w-4 h-4" />
+                      Specifications
                     </h4>
                     <ul className="space-y-1">
-                      {sentimentData.commonPraises.map((praise, index) => (
+                      {Object.entries(product?.specifications || {}).map(([key, value], index) => (
                         <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
                           <span className="text-[#1B606F] mt-1">•</span>
-                          {praise}
+                          {key} | {value}
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div>
-                    <h4 className="font-semibold text-[#FFA254] mb-3 flex items-center gap-2">
-                      <ThumbsDown className="w-4 h-4" />
-                      Common Criticisms
-                    </h4>
-                    <ul className="space-y-1">
-                      {sentimentData.commonCriticisms.map((criticism, index) => (
-                        <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
-                          <span className="text-[#FFA254] mt-1">•</span>
-                          {criticism}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+
                 </div>
 
                 {/* Recommendation Stats */}
                 <div className="bg-gradient-to-r from-[#86ECCE] to-[#FFF388] p-4 rounded-lg">
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
-                      <div className="text-2xl font-bold text-[#030507] mb-1">{sentimentData.recommendationRate}%</div>
+                      <div className="text-2xl font-bold text-[#030507] mb-1">{product?.recommendation_score_out_of_100}%</div>
                       <div className="text-sm text-[#030507]">Would Recommend</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-[#030507] mb-1">{sentimentData.wouldBuyAgain}%</div>
+                      <div className="text-2xl font-bold text-[#030507] mb-1">{product?.would_buy_again_score_out_of_100}%</div>
                       <div className="text-sm text-[#030507]">Would Buy Again</div>
                     </div>
                   </div>
@@ -332,45 +323,16 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
           </Dialog>
         </div>
 
-        {/* Pros and Cons */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <ThumbsUp className="w-4 h-4 text-[#1B606F]" />
-              <span className="text-sm font-medium text-[#030507]">Pros</span>
-            </div>
-            <ul className="space-y-1">
-              {/* {product.pros.slice(0, 2).map((pro, index) => (
-                <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
-                  <span className="text-[#1B606F] mt-1">•</span>
-                  {pro}
-                </li>
-              ))} */}
-            </ul>
-          </div>
 
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <ThumbsDown className="w-4 h-4 text-[#FFA254]" />
-              <span className="text-sm font-medium text-[#030507]">Cons</span>
-            </div>
-            <ul className="space-y-1">
-              {/* {product.cons.slice(0, 2).map((con, index) => (
-                <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
-                  <span className="text-[#FFA254] mt-1">•</span>
-                  {con}
-                </li>
-              ))} */}
-            </ul>
-          </div>
-        </div>
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
-          <Button className="flex-1 bg-[#030507] hover:bg-[#575758] text-white">
+          <a href={product.product_url} target="_blank">
+            <Button className="flex-1 bg-[#030507] hover:bg-[#575758] text-white">
             View Product
             <ExternalLink className="w-4 h-4 ml-2" />
           </Button>
+          </a>
         </div>
       </div>
     </div>

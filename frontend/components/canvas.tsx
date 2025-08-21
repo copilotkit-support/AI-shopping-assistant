@@ -8,6 +8,15 @@ interface Product {
   id: string
   image_urls: string[]
   title: string
+  specifications: object
+  review_sentiment: {
+    positive_score: number,
+    neutral_score: number,
+    negative_score: number,
+  },
+  key_insights_from_reviews: string[],
+  recommendation_score_out_of_100: number,
+  would_buy_again_score_out_of_100: number,
   product_url: string,
   price_text: string,
   rating_value: number,
@@ -94,14 +103,15 @@ export function Canvas({
         </div>
 
         <div className="flex gap-3">
-          <Button
+          {/* <Button
+            hidden
             onClick={onGoToReport}
             disabled={!query || products.length === 0}
             className="bg-[#1B606F] hover:bg-[#86ECE4] hover:text-[#030507] text-white flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
             View Report
-          </Button>
+          </Button> */}
 
           <Button
             onClick={onGoToWishlist}
