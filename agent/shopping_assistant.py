@@ -131,7 +131,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
 
     tv = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     results_all: List[Dict[str, Any]] = []
-
+    total_mappings_list = []
     state["logs"].append({
         "message" : "Identifying the sites to search",
         "status" : "processing"
@@ -179,6 +179,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         if not raw:
             continue
         modiefied_text, mappings_list = replace_urls_with_product_links(raw)
+        total_mappings_list.extend(mappings_list)
         dom = retailer_of(url)
         detail_hint = is_pdp(url)
         assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
@@ -235,7 +236,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     state["logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
     
-    updated_products = apply_url_mappings_to_products(results_all, mappings_list)
+    updated_products = apply_url_mappings_to_products(results_all, total_mappings_list)
         
     state["buffer_products"] = updated_products
     
@@ -546,7 +547,7 @@ def filter_only_pdps(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def replace_urls_with_product_links(
     text: str, 
     base_pattern: str = "https://productUrl{}.ai",
-    exempt_prefixes: tuple = ("https://m.media-amazon.com",)
+    exempt_prefixes: tuple = ()
 ):
     """
     Replace every http/https URL in `text` with a unique placeholder URL,
@@ -595,7 +596,7 @@ def replace_urls_with_product_links(
             counter += 1
             replacement = base_pattern.format(counter)
             mapping[url] = replacement
-            assigned.append([url, replacement])
+            assigned.append([replacement, url])
         else:
             replacement = mapping[url]
 
