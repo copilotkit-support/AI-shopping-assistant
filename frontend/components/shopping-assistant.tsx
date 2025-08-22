@@ -314,6 +314,7 @@ export function ShoppingAssistant() {
         })
       }
       if (args?.remove_from_canvas) {
+        debugger
         let itemsToRemove = args?.remove_from_canvas?.map((product: any) => product?.product_id)
         setState({
           ...state,

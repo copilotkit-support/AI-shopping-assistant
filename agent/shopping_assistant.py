@@ -178,7 +178,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         raw = item.get("raw_content") or ""
         if not raw:
             continue
-        modiefied_text, mappings_list = replace_urls_with_product_links(raw)
+        modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
         total_mappings_list.extend(mappings_list)
         dom = retailer_of(url)
         detail_hint = is_pdp(url)
@@ -522,7 +522,7 @@ RAW_WEB_PAGE:
 def call_llm(prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
-        model=model,
+        model="gpt-4.1-mini",
         response_format={"type": "json_object"},
         temperature=0,
         messages=[
@@ -544,66 +544,88 @@ def filter_only_pdps(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 
-def replace_urls_with_product_links(
-    text: str, 
-    base_pattern: str = "https://productUrl{}.ai",
-    exempt_prefixes: tuple = ()
+import re
+from urllib.parse import urlsplit
+
+def replace_urls_with_product_and_image_links(
+    text: str,
+    product_base: str = "https://amzn.com/url{}",
+    image_base: str = "https://amzn.com/img/url{}",
+    exempt_prefixes: tuple = (),
 ):
     """
-    Replace every http/https URL in `text` with a unique placeholder URL,
-    unless the URL starts with one of the `exempt_prefixes`.
+    Replace URLs in `text` with unique placeholders:
+      - image URLs -> image_base.format(i) e.g., https://productImg1.ai
+      - non-image URLs -> product_base.format(j) e.g., https://productUrl1.ai
 
-    Parameters
-    ----------
-    text : str
-        Input text that may contain URLs.
-    base_pattern : str, optional
-        Format string for replacements, e.g. "https://productUrl{}.ai".
-    exempt_prefixes : tuple of str, optional
-        URLs starting with any of these prefixes will be left unchanged.
+    Rules:
+      - Same original URL always maps to the same replacement.
+      - URLs starting with any `exempt_prefixes` are left untouched.
+      - Trailing punctuation like '),.;:!?]' is preserved.
 
     Returns
     -------
     new_text : str
-        The text with URLs replaced by unique placeholders (except exempted ones).
+        Text with all replacements applied.
     mappings_list : list[list[str, str]]
-        A list of [original_url, replacement_url] pairs (for non-exempt URLs).
+        Pairs of [original_url, replacement_url] for all *non-exempt* URLs
+        (includes both image and non-image mappings).
     """
+    # Robust-enough matcher for http/https inside natural text
     url_re = re.compile(r'\bhttps?://[^\s<>()"\']+', re.IGNORECASE)
     TRAILING_PUNCT = set('),.;:!?]')
 
-    mapping = {}
-    assigned = []
-    counter = 0
+    # Common image extensions (lowercased, matched on the URL path)
+    IMAGE_EXTS = (
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp",
+        ".svg", ".tif", ".tiff", ".avif", ".heic", ".heif", ".jfif"
+    )
 
-    def _repl(match: re.Match) -> str:
-        nonlocal counter
-        token = match.group(0)
+    def _is_image_url(u: str) -> bool:
+        # Strip query/fragment; decide using only the path
+        path = urlsplit(u).path.lower()
+        return any(path.endswith(ext) for ext in IMAGE_EXTS)
 
-        # Detach trailing punctuation
+    # One mapping table for all URLs (image + non-image)
+    mapping: dict[str, str] = {}
+    pairs: list[list[str, str]] = []
+
+    # Independent counters to keep numbering separate & clear
+    product_counter = 0
+    image_counter = 0
+
+    def _repl(m: re.Match) -> str:
+        nonlocal product_counter, image_counter
+        token = m.group(0)
+
+        # Separate trailing punctuation often glued to URLs in prose
         url = token
         trailing = ""
         while url and url[-1] in TRAILING_PUNCT:
             trailing = url[-1] + trailing
             url = url[:-1]
 
-        # --- Exemption check ---
+        # Exemptions: leave untouched
         if url.startswith(exempt_prefixes):
             return url + trailing
 
-        # Assign or reuse replacement
+        # Assign or reuse a replacement
         if url not in mapping:
-            counter += 1
-            replacement = base_pattern.format(counter)
-            mapping[url] = replacement
-            assigned.append([replacement, url])
+            if _is_image_url(url):
+                image_counter += 1
+                repl_url = image_base.format(image_counter)
+            else:
+                product_counter += 1
+                repl_url = product_base.format(product_counter)
+            mapping[url] = repl_url
+            pairs.append([repl_url, url])
         else:
-            replacement = mapping[url]
+            repl_url = mapping[url]
 
-        return replacement + trailing
+        return repl_url + trailing
 
     new_text = url_re.sub(_repl, text)
-    return new_text, assigned
+    return new_text, pairs
 
 
 
@@ -632,13 +654,15 @@ def apply_url_mappings_to_products(products: list[dict], mappings: list[list[str
 
         # Replace product_url if present in mapping
         if "product_url" in new_product and new_product["product_url"] in mapping_dict:
-            new_product["product_url"] = mapping_dict[new_product["product_url"]]
-
+            new_product["product_url"] = next((mapping for mapping in mappings if product['product_url'] in mapping), None )
+            new_product["product_url"] = new_product["product_url"][1]
         # Replace each image URL
         if "image_urls" in new_product:
-            new_product["image_urls"] = [
-                mapping_dict.get(url, url) for url in new_product["image_urls"]
-            ]
+            if(len(new_product["image_urls"]) > 0):
+                new_product["image_urls"] = next((mapping for mapping in mappings if new_product['image_urls'][0] in mapping), None )
+                new_product["image_urls"] = [new_product["image_urls"][1]]
+            else:
+                new_product["image_urls"] = []
 
         updated_products.append(new_product)
 
