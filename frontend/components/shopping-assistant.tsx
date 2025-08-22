@@ -314,20 +314,20 @@ export function ShoppingAssistant() {
     handler: (args) => {
       console.log(args, "argsargsargsargs")
       debugger
-      if (args?.move_to_wishlist) {
+      if (args?.move_to_wishlist?.length > 0) {
         setState({
           ...state,
           favorites: [...state?.favorites, ...args?.move_to_wishlist?.map((product: any) => product?.product_id)]
         })
       }
-      if (args?.remove_from_wishlist) {
+      if (args?.remove_from_wishlist?.length > 0) {
         let itemsToRemove = args?.remove_from_wishlist?.map((product: any) => product?.product_id)
         setState({
           ...state,
           favorites: state?.favorites?.filter((id: any) => !itemsToRemove?.includes(id))
         })
       }
-      if (args?.remove_from_canvas) {
+      if (args?.remove_from_canvas?.length > 0) {
         debugger
         let itemsToRemove = args?.remove_from_canvas?.map((product: any) => product?.product_id)
         if(state?.buffer_products?.length > 0){

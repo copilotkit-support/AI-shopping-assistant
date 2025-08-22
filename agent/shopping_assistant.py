@@ -529,7 +529,6 @@ def call_llm(prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
     resp = client.chat.completions.create(
         model="gpt-5-mini",
         response_format={"type": "json_object"},
-        temperature=0,
         messages=[
             {"role": "system", "content": SYSTEM_MSG},
             {"role": "user", "content": prompt},
