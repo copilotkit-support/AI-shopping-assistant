@@ -95,7 +95,10 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             
         return Command(
             goto=END,
-            update={"messages" : state["messages"]}
+            update={
+                "messages" : state["messages"],
+                "buffer_products" : state["buffer_products"]
+            }
         )
     
     messages = state["messages"]
@@ -187,7 +190,9 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         try:
             if len(results_all) > 10:
                 break
+            print(f"Calling LLM for {url}")
             data = call_llm(prompt)
+            print(f"Completed extracting {url}")
             done = True
         except Exception as e:
             # If LLM fails, skip this page
@@ -241,7 +246,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     state["buffer_products"] = updated_products
     
     await copilotkit_emit_state(config, state)
-    state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:10], "buffer_products" : state["buffer_products"][:15]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
+    state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
     state["logs"] = []
     await copilotkit_emit_state(config, state)
             

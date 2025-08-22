@@ -116,10 +116,23 @@ export function ShoppingAssistant() {
   const deleteProduct = (productId: string) => {
     const productToDelete = state?.products?.find((p: any) => p.id === productId)
     if (!productToDelete) return
-    setState({
-      ...state,
-      products: state?.products?.filter((p: any) => p.id !== productId)
-    })
+    
+    if(state?.buffer_products?.length > 0){
+      let a = state?.buffer_products.pop()
+      setState({
+        ...state,
+        products: [...state?.products?.filter((p: any) => p.id !== productId), ...(a ? [a] : [])]
+      })
+    }
+    else{
+      setState({
+        ...state,
+        products: state?.products?.filter((p: any) => p.id !== productId)
+      })
+    }
+
+
+    
     // Simulate AI finding replacement
     // const replacementProducts = [
     //   {
@@ -300,6 +313,7 @@ export function ShoppingAssistant() {
     ],
     handler: (args) => {
       console.log(args, "argsargsargsargs")
+      debugger
       if (args?.move_to_wishlist) {
         setState({
           ...state,
@@ -338,7 +352,8 @@ export function ShoppingAssistant() {
           respond(true)
           setState({
             ...state,
-            products: args?.products
+            products: args?.products,
+            buffer_products: args?.buffer_products.slice(5,args?.buffer_products.length)
           })
           setProducts(args?.products)
         }
@@ -347,9 +362,10 @@ export function ShoppingAssistant() {
           respond("Show more products")
           setState({
             ...state,
-            products: args?.buffer_products
+            products: args?.buffer_products?.slice(0, 10),
+            buffer_products: args?.buffer_products.slice(10,args?.buffer_products.length)
           })
-          setProducts(args?.buffer_products)
+          setProducts(args?.buffer_products?.slice(0, 10))
         }
       }} />
     }
