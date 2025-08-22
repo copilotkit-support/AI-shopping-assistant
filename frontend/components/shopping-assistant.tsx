@@ -330,10 +330,20 @@ export function ShoppingAssistant() {
       if (args?.remove_from_canvas) {
         debugger
         let itemsToRemove = args?.remove_from_canvas?.map((product: any) => product?.product_id)
-        setState({
-          ...state,
-          products: state?.products?.filter((product: any) => !itemsToRemove?.includes(product?.id))
-        })
+        if(state?.buffer_products?.length > 0){
+          let a = state?.buffer_products.pop()
+          setState({
+            ...state,
+            products: [...state?.products?.filter((p: any) => !itemsToRemove?.includes(p?.id)), ...(a ? [a] : [])]
+          })
+        }
+        else{
+          setState({
+            ...state,
+            products: state?.products?.filter((p: any) => !itemsToRemove?.includes(p?.id))
+          })
+        }
+        
       }
       return "Product edited successfully"
     }
