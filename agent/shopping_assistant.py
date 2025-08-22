@@ -527,7 +527,7 @@ RAW_WEB_PAGE:
 def call_llm(prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="gpt-5-mini",
         response_format={"type": "json_object"},
         temperature=0,
         messages=[
