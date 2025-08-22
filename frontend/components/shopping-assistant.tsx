@@ -374,7 +374,7 @@ export function ShoppingAssistant() {
 
   useCopilotChatSuggestions({
     available: "enabled",
-    instructions: "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc.",
+    instructions: "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc. Example suggestions: Find laptops under $1500, Find good smartphones for photography, Get me some wireless earbuds with ANC, Best smartphones under $500, Budget 4K monitors under $400",
   })
 
   const { visibleMessages, isLoading } = useCopilotChat()
