@@ -15,7 +15,7 @@ from openai import OpenAI
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from dotenv import load_dotenv
-
+import re
 load_dotenv()
 
 class AgentState(CopilotKitState):
@@ -146,7 +146,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         include_domains=RETAILERS,
         include_answer=False,
         include_images=False,
-        include_raw_content=True,
+        include_raw_content=False,
         search_depth="advanced",
         max_results=max_search_results,
     )
@@ -178,11 +178,11 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         raw = item.get("raw_content") or ""
         if not raw:
             continue
-
+        modiefied_text, mappings_list = replace_urls_with_product_links(raw)
         dom = retailer_of(url)
         detail_hint = is_pdp(url)
-        assist = parse_target_structured(raw) if "target.com" in dom else None
-        prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=detail_hint)
+        assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
+        prompt = build_llm_prompt(modiefied_text, url, assist=assist, detail_hint=detail_hint)
         try:
             if len(results_all) > 10:
                 break
@@ -235,7 +235,9 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     state["logs"][-1]["status"] = "completed"
     await copilotkit_emit_state(config, state)
     
-    state["buffer_products"] = results_all
+    updated_products = apply_url_mappings_to_products(results_all, mappings_list)
+        
+    state["buffer_products"] = updated_products
     
     await copilotkit_emit_state(config, state)
     state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:10], "buffer_products" : state["buffer_products"][:15]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
@@ -294,20 +296,20 @@ PRODUCTS_SCHEMA = {
                     "product_url": {"type": "string"},
                     "image_urls": {"type": "array", "items": {"type": "string"}},
                     "price_text": {"type": "string"},
-                    "price_value": {"type": ["number", "None"]},
-                    "price_currency": {"type": ["string", "None"]},
-                    "availability": {"type": ["string", "None"]},
-                    "rating_value": {"type": ["number", "None"]},
-                    "rating_count": {"type": ["integer", "None"]},
-                    "model": {"type": ["string", "None"]},
-                    "sku": {"type": ["string", "None"]},
+                    "price_value": {"type": ["number", "null"]},
+                    "price_currency": {"type": ["string", "null"]},
+                    "availability": {"type": ["string", "null"]},
+                    "rating_value": {"type": ["number", "null"]},
+                    "rating_count": {"type": ["integer", "null"]},
+                    "model": {"type": ["string", "null"]},
+                    "sku": {"type": ["string", "null"]},
                     "specifications": {
-                        "type": ["object", "None"],
+                        "type": ["object", "null"],
                         "additionalProperties": {"type": "string"},
                     },
                     "key_insights_from_reviews": {"type": "array", "items" : {"type" : "string"}},
                     "review_sentiment": {
-                        "type": ["object", "None"],
+                        "type": ["object", "null"],
                         "properties": {
                             "positive_score": {"type": "number"},
                             "negative_score": {"type": "number"},
@@ -320,7 +322,6 @@ PRODUCTS_SCHEMA = {
                     "would_buy_again_score_out_of_100": {"type": "number"}
                     
                 },
-                "additionalProperties": False,
             },
         },
     },
@@ -335,9 +336,10 @@ Rules:
 - If input is a PDP, emit exactly one rich product object.
 - If input is a listing, emit up to ~20 DISTINCT products, each with a PDP product_url (not homepage or category).
 - Include title, product_url, price_text; add image_urls, availability, rating_value, rating_count, model, sku.
+- If image_urls is not present, then return empty array.
 - Provide detailed "specifications" as key→value pairs.
-- Provide one short "review_text" (from page if available) and "review_sentiment" (label: positive|neutral|negative, score in [-1,1]).
-- Parse price_value and price_currency when possible, else set None.
+- Provide few "key_insights_from_reviews" (from page if available) and "review_sentiment" (label: positive|neutral|negative, score in [0,1]).
+- Parse price_value and price_currency when possible, else set null.
 - Output ONLY minified JSON, no commentary.
 """
 
@@ -538,3 +540,105 @@ def filter_only_pdps(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if is_pdp(u):
             out.append(p)
     return out
+
+
+
+def replace_urls_with_product_links(
+    text: str, 
+    base_pattern: str = "https://productUrl{}.ai",
+    exempt_prefixes: tuple = ("https://m.media-amazon.com",)
+):
+    """
+    Replace every http/https URL in `text` with a unique placeholder URL,
+    unless the URL starts with one of the `exempt_prefixes`.
+
+    Parameters
+    ----------
+    text : str
+        Input text that may contain URLs.
+    base_pattern : str, optional
+        Format string for replacements, e.g. "https://productUrl{}.ai".
+    exempt_prefixes : tuple of str, optional
+        URLs starting with any of these prefixes will be left unchanged.
+
+    Returns
+    -------
+    new_text : str
+        The text with URLs replaced by unique placeholders (except exempted ones).
+    mappings_list : list[list[str, str]]
+        A list of [original_url, replacement_url] pairs (for non-exempt URLs).
+    """
+    url_re = re.compile(r'\bhttps?://[^\s<>()"\']+', re.IGNORECASE)
+    TRAILING_PUNCT = set('),.;:!?]')
+
+    mapping = {}
+    assigned = []
+    counter = 0
+
+    def _repl(match: re.Match) -> str:
+        nonlocal counter
+        token = match.group(0)
+
+        # Detach trailing punctuation
+        url = token
+        trailing = ""
+        while url and url[-1] in TRAILING_PUNCT:
+            trailing = url[-1] + trailing
+            url = url[:-1]
+
+        # --- Exemption check ---
+        if url.startswith(exempt_prefixes):
+            return url + trailing
+
+        # Assign or reuse replacement
+        if url not in mapping:
+            counter += 1
+            replacement = base_pattern.format(counter)
+            mapping[url] = replacement
+            assigned.append([url, replacement])
+        else:
+            replacement = mapping[url]
+
+        return replacement + trailing
+
+    new_text = url_re.sub(_repl, text)
+    return new_text, assigned
+
+
+
+def apply_url_mappings_to_products(products: list[dict], mappings: list[list[str, str]]) -> list[dict]:
+    """
+    Replace 'product_url' and 'image_urls' values in each product dict 
+    using the given URL mappings.
+
+    Parameters
+    ----------
+    products : list of dict
+        Each dict has keys like 'product_url' and 'image_urls'.
+    mappings : list of [original_url, replacement_url]
+        Output from replace_urls_with_product_links.
+
+    Returns
+    -------
+    updated_products : list of dict
+        New list with URLs replaced where possible.
+    """
+    mapping_dict = dict(mappings)  # quick lookup
+
+    updated_products = []
+    for product in products:
+        new_product = product.copy()
+
+        # Replace product_url if present in mapping
+        if "product_url" in new_product and new_product["product_url"] in mapping_dict:
+            new_product["product_url"] = mapping_dict[new_product["product_url"]]
+
+        # Replace each image URL
+        if "image_urls" in new_product:
+            new_product["image_urls"] = [
+                mapping_dict.get(url, url) for url in new_product["image_urls"]
+            ]
+
+        updated_products.append(new_product)
+
+    return updated_products
