@@ -344,6 +344,7 @@ export function ShoppingAssistant() {
         isSearching={isSearching}
         currentView={currentView}
         wishlistCount={state?.favorites?.length}
+        goToProducts={exitToProducts}
       />
 
       <div className="flex-1 flex flex-col min-w-0">

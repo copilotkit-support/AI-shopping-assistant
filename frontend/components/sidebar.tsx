@@ -49,6 +49,7 @@ interface SidebarProps {
   isSearching: boolean
   currentView: "products" | "wishlist" | "report"
   wishlistCount: number
+  goToProducts: () => void
 }
 
 const initialMessages: Message[] = [
@@ -72,6 +73,7 @@ export function Sidebar({
   isSearching,
   currentView,
   wishlistCount,
+  goToProducts,
 }: SidebarProps) {
   // const [messages, setMessages] = useState<Message[]>(initialMessages)
   // const [inputValue, setInputValue] = useState("")
@@ -139,6 +141,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
         <div className="flex items-center gap-2">
           <p className="text-sm text-[#575758]">{getViewTitle()}</p>
           <Button onClick={() => {
+            goToProducts()
             reset()
             setQuery("")
             clearState({
