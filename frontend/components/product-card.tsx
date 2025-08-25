@@ -185,7 +185,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
       {/* Product Image */}
       <div key={product.id} className="aspect-square bg-[#F7F7F9] rounded-lg mb-4 overflow-hidden">
-        <img style={{objectFit: "contain"}} src={product?.image_urls?.[0] || "/placeholder.svg"} alt={product.title} className="w-full h-full object-cover p-2" />
+        <img style={{ objectFit: "contain" }} src={product?.image_urls?.[0] || "/placeholder.svg"} alt={product.title} className="w-full h-full object-cover p-2" />
       </div>
 
       {/* Product Info */}
@@ -217,6 +217,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
             </span>
           </div>
 
+
           {/* AI Insights Button */}
           <Dialog>
             <DialogTrigger asChild>
@@ -230,7 +231,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
             </DialogTrigger>
             <DialogContent className="max-w-2xl bg-white border-[#D8D8E5]">
               <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-[#030507] font-['Roobert'] flex items-center gap-2">
+                <DialogTitle className="text-xl font-semibold text-[#030507] font-['Roobert'] flex flex-wrap items-start gap-2 text-left pr-8 break-words whitespace-normal">
                   <Lightbulb className="w-5 h-5 text-[#1B606F]" />
                   AI Review Insights: {product.title}
                 </DialogTitle>
@@ -270,7 +271,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
                 {/* Key Insights */}
                 <div>
-                  <h3 className="font-semibold text-[#030507] mb-3">Key Insights from {product.rating_count} Reviews</h3>
+                  <h3 className="font-semibold text-[#030507] mb-3">Customers Say</h3>
                   <ul className="space-y-2">
                     {product?.key_insights_from_reviews.map((insight, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm text-[#575758]">
@@ -283,7 +284,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
 
                 {/* Common Feedback */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                  {/* <div>
                     <h4 className="font-semibold text-[#1B606F] mb-3 flex items-center gap-2">
                       <SettingsIcon className="w-4 h-4" />
                       Specifications
@@ -296,7 +297,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </div> */}
 
 
                 </div>
@@ -324,17 +325,48 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
         </div>
 
 
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <ThumbsUp className="w-4 h-4 text-[#1B606F]" />
+              <span className="text-sm font-medium text-[#030507]">Pros</span>
+            </div>
+            <ul className="space-y-1">
+              {product.pros.map((pro, index) => (
+                <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
+                  <span className="text-[#1B606F] mt-1">•</span>
+                  {pro}
+                </li>
+              ))}
+            </ul>
+          </div>
 
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <ThumbsDown className="w-4 h-4 text-[#FFA254]" />
+              <span className="text-sm font-medium text-[#030507]">Cons</span>
+            </div>
+            <ul className="space-y-1">
+              {product.cons.map((con, index) => (
+                <li key={index} className="text-sm text-[#575758] flex items-start gap-2">
+                  <span className="text-[#FFA254] mt-1">•</span>
+                  {con}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
         {/* Actions */}
         <div className="flex gap-2 pt-2">
           <a href={product.product_url} target="_blank">
             <Button className="flex-1 bg-[#030507] hover:bg-[#575758] text-white">
-            View Product
-            <ExternalLink className="w-4 h-4 ml-2" />
-          </Button>
+              View Product
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
           </a>
         </div>
       </div>
+
     </div>
   )
 }

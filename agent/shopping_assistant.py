@@ -27,6 +27,7 @@ class AgentState(CopilotKitState):
     favorites: List
     buffer_products: List
     logs: List
+    report: str
 
 
 async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
@@ -44,6 +45,16 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         raise RuntimeError("Missing TAVILY_API_KEY")
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("Missing OPENAI_API_KEY")
+    if state['messages'][-1].type == 'ai':
+        result =await generate_report(state["products"])
+        print(result, "result")
+        return Command(
+            goto=END,
+            update={
+                **state,
+                "report" : json.loads(result)
+            }
+        )
     model = ChatOpenAI(streaming=False)
     state["logs"].append({
         "message" : "Analyzing user query",
@@ -128,7 +139,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     
     
     
-    # query = state["messages"][-1].content
+    query = state["messages"][-1].content
     max_search_results = 8
     target_follow = 6
 
@@ -213,6 +224,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
 
         results_all += data["products"]
 
+    
+    
     # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
     target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
     if target_listing_pdps:
@@ -244,6 +257,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     updated_products = apply_url_mappings_to_products(results_all, total_mappings_list)
         
     state["buffer_products"] = updated_products
+    # state["buffer_products"] = results_all
     
     await copilotkit_emit_state(config, state)
     state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
@@ -261,6 +275,21 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     
     
 
+
+async def generate_report(products: List[Dict[str, Any]]) -> str:
+    """
+    Generate a report for the given products.
+    """
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        response_format= {"type": "json_object"},
+        messages=[
+            {"role": "system", "content": SYSTEM_MSG1},
+            {"role": "user", "content": json.dumps(products)}
+        ]
+    )
+    return response.choices[0].message.content
 
 
 workflow = StateGraph(AgentState)
@@ -309,10 +338,8 @@ PRODUCTS_SCHEMA = {
                     "rating_count": {"type": ["integer", "null"]},
                     "model": {"type": ["string", "null"]},
                     "sku": {"type": ["string", "null"]},
-                    "specifications": {
-                        "type": ["object", "null"],
-                        "additionalProperties": {"type": "string"},
-                    },
+                    "pros": {"type": "array", "items" : {"type" : "string"}},
+                    "cons": {"type": "array", "items" : {"type" : "string"}},
                     "key_insights_from_reviews": {"type": "array", "items" : {"type" : "string"}},
                     "review_sentiment": {
                         "type": ["object", "null"],
@@ -334,7 +361,39 @@ PRODUCTS_SCHEMA = {
     "required": ["products"],
     "additionalProperties": False,
 }
-
+REPORT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "top_pick": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "summary": {"type": "string"},
+            }
+        },
+        "best_performance": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "summary": {"type": "string"},
+            }
+        },
+        "best_value_for_money": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "summary": {"type": "string"},
+            }
+        },
+        "products_specifications": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "specifications": {"type": "array", "items": {"type": "string"}},
+            }
+        }
+    }
+}
 SYSTEM_MSG = """You are a precise web data extractor
 Return STRICT JSON matching the provided JSON Schema.
 
@@ -343,11 +402,27 @@ Rules:
 - If input is a listing, emit up to ~20 DISTINCT products, each with a PDP product_url (not homepage or category).
 - Include title, product_url, price_text; add image_urls, availability, rating_value, rating_count, model, sku.
 - If image_urls is not present, then return empty array.
-- Provide detailed "specifications" as key→value pairs.
-- Provide few "key_insights_from_reviews" (from page if available) and "review_sentiment" (label: positive|neutral|negative, score in [0,1]).
+- Provide "pros" and "cons" as array of strings. Make sure to have 2 pros and 2 cons. If you cant find pros and cons from the text data, Generate it yourself.
+- Provide at least 5 "key_insights_from_reviews" and "review_sentiment" (label: positive|neutral|negative, score in [0,1]).
 - Parse price_value and price_currency when possible, else set null.
 - Output ONLY minified JSON, no commentary.
 """
+SYSTEM_MSG1 = f"""You are a Products report generator
+Return STRICT JSON matching the provided JSON Schema
+
+Rules:
+- You are given a list of products.
+- You need to generate a report based on the given products.
+- You should also generate specifications for all the products that is given. Make sure to have at least 5 specifications for each product. Also the specs titles should be uniform for all the products. like processor, ram, storage, display, battery, weight, ports, os, etc. You need to use web search for the specifications.
+- The report should have the product with a top pick with a bit of summary.
+- The report should have the product with best performance with a bit of summary.
+- The report should have the product with best value for the money with a bit of summary
+
+JSON_SCHEMA:
+{json.dumps(REPORT_SCHEMA)}
+
+"""
+
 
 DETAIL_MODE_HINT = "IMPORTANT: This content is a PRODUCT DETAIL PAGE (PDP). Extract exactly 1 rich product."
 LISTING_MODE_HINT = "IMPORTANT: This content is a LISTING. Extract distinct items and ensure each product_url is a PDP."

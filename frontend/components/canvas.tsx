@@ -49,6 +49,8 @@ interface CanvasProps {
   onDeleteProduct: (productId: string) => void
   onGoToWishlist: () => void
   onGoToReport: () => void
+  start: () => void
+  report: any
 }
 
 export function Canvas({
@@ -60,7 +62,9 @@ export function Canvas({
   onDeleteProduct,
   onGoToWishlist,
   onGoToReport,
-}: CanvasProps) {
+  start,
+  report,
+  }: CanvasProps) {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
@@ -103,15 +107,21 @@ export function Canvas({
         </div>
 
         <div className="flex gap-3">
-          {/* <Button
-            hidden
-            onClick={onGoToReport}
+          <Button
+            onClick={() => {
+              debugger
+              console.log(report, "report")
+              if(!report){
+                start()
+              }
+              onGoToReport()
+            }}
             disabled={!query || products.length === 0}
             className="bg-[#1B606F] hover:bg-[#86ECE4] hover:text-[#030507] text-white flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
             View Report
-          </Button> */}
+          </Button>
 
           <Button
             onClick={onGoToWishlist}

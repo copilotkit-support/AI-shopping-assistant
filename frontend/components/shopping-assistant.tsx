@@ -116,87 +116,20 @@ export function ShoppingAssistant() {
   const deleteProduct = (productId: string) => {
     const productToDelete = state?.products?.find((p: any) => p.id === productId)
     if (!productToDelete) return
-    
-    if(state?.buffer_products?.length > 0){
+
+    if (state?.buffer_products?.length > 0) {
       let a = state?.buffer_products.pop()
       setState({
         ...state,
         products: [...state?.products?.filter((p: any) => p.id !== productId), ...(a ? [a] : [])]
       })
     }
-    else{
+    else {
       setState({
         ...state,
         products: state?.products?.filter((p: any) => p.id !== productId)
       })
     }
-
-
-    
-    // Simulate AI finding replacement
-    // const replacementProducts = [
-    //   {
-    //     id: "replacement-1",
-    //     name: "ASUS ZenBook 14",
-    //     price: "$899",
-    //     image: "/placeholder.svg?height=200&width=200&text=ASUS+ZenBook",
-    //     pros: ["Lightweight design", "Good battery life", "Affordable price", "Solid performance"],
-    //     cons: ["Average display", "Limited ports", "Plastic build"],
-    //     source: "ASUS Store",
-    //     rating: 4.3,
-    //     reviews: 456,
-    //     specs: {
-    //       processor: "Intel Core i5-1235U",
-    //       ram: "8GB LPDDR4X",
-    //       storage: "512GB SSD",
-    //       display: '14" Full HD IPS',
-    //       battery: "Up to 12 hours",
-    //       weight: "3.17 lbs",
-    //       ports: "2x USB-A, 1x USB-C, HDMI",
-    //       os: "Windows 11",
-    //     },
-    //   },
-    //   {
-    //     id: "replacement-2",
-    //     name: "HP Spectre x360",
-    //     price: "$1,399",
-    //     image: "/placeholder.svg?height=200&width=200&text=HP+Spectre",
-    //     pros: ["2-in-1 convertible", "Premium build", "Great display", "Long battery life"],
-    //     cons: ["Gets warm", "Expensive", "Heavy for tablet mode"],
-    //     source: "HP.com",
-    //     rating: 4.4,
-    //     reviews: 789,
-    //     specs: {
-    //       processor: "Intel Core i7-1255U",
-    //       ram: "16GB LPDDR4X",
-    //       storage: "1TB SSD",
-    //       display: '13.5" 3K2K OLED Touch',
-    //       battery: "Up to 14 hours",
-    //       weight: "3.01 lbs",
-    //       ports: "2x Thunderbolt 4, 1x USB-A",
-    //       os: "Windows 11",
-    //     },
-    //   },
-    // ]
-
-    // const replacement = replacementProducts[Math.floor(Math.random() * replacementProducts.length)]
-
-    // Update products
-    // setProducts((prev : any) => prev.map((p : any) => (p.id === productId ? replacement : p)))
-
-    // Update agent decisions
-    // setAgentDecisions((prev) => ({
-    //   ...prev,
-    //   replacementHistory: [
-    //     ...prev.replacementHistory,
-    //     {
-    //       removedProduct: productToDelete.name,
-    //       replacedWith: replacement.name,
-    //       reason: `Found better alternative with similar specs but improved value proposition and user ratings`,
-    //       timestamp: new Date(),
-    //     },
-    //   ],
-    // }))
   }
 
   const goToReport = () => {
@@ -247,22 +180,23 @@ export function ShoppingAssistant() {
   }
 
 
-  const { state, setState } = useCoAgent({
+  const { state, setState, start, run } = useCoAgent({
     name: "shopping_agent",
     initialState: {
       products: [],
       favorites: [] as string[],
       buffer_products: [],
-      logs: [] as ToolLog[]
+      logs: [] as ToolLog[],
+      report: {}
     }
   })
   const wishlistProducts = state?.products?.filter((product: any) => state?.favorites?.includes(product.id))
 
   useCoAgentStateRender({
-    name : "shopping_agent",
-    render : (state1 : any) => {
+    name: "shopping_agent",
+    render: (state1: any) => {
       // useEffect(() => {
-        console.log(state1, "state1")
+      console.log(state1, "state1")
       // }, [state1])
 
       return <ToolLogs logs={state1?.state?.logs || []} />
@@ -330,20 +264,20 @@ export function ShoppingAssistant() {
       if (args?.remove_from_canvas?.length > 0) {
         debugger
         let itemsToRemove = args?.remove_from_canvas?.map((product: any) => product?.product_id)
-        if(state?.buffer_products?.length > 0){
+        if (state?.buffer_products?.length > 0) {
           let a = state?.buffer_products.pop()
           setState({
             ...state,
             products: [...state?.products?.filter((p: any) => !itemsToRemove?.includes(p?.id)), ...(a ? [a] : [])]
           })
         }
-        else{
+        else {
           setState({
             ...state,
             products: state?.products?.filter((p: any) => !itemsToRemove?.includes(p?.id))
           })
         }
-        
+
       }
       return "Product edited successfully"
     }
@@ -357,13 +291,15 @@ export function ShoppingAssistant() {
     name: "list_products",
     description: "A list of products that are scraped from web",
     renderAndWaitForResponse: ({ status, respond, args }) => {
+      console.log(args, "argsargsargsargs")
+
       return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} onAccept={() => {
         if (respond) {
           respond(true)
           setState({
             ...state,
             products: args?.products,
-            buffer_products: args?.buffer_products.slice(5,args?.buffer_products.length)
+            buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length)
           })
           setProducts(args?.products)
         }
@@ -373,7 +309,7 @@ export function ShoppingAssistant() {
           setState({
             ...state,
             products: args?.buffer_products?.slice(0, 10),
-            buffer_products: args?.buffer_products.slice(10,args?.buffer_products.length)
+            buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length)
           })
           setProducts(args?.buffer_products?.slice(0, 10))
         }
@@ -400,6 +336,8 @@ export function ShoppingAssistant() {
   return (
     <div className="flex h-screen bg-[#FAFCFA] overflow-hidden">
       <Sidebar
+        setQuery={setQuery}
+        clearState={setState}
         onSearch={handleSearch}
         suggestions={mockSuggestions}
         currentQuery={query}
@@ -410,7 +348,7 @@ export function ShoppingAssistant() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {currentView === "report" ? (
-          <ReportView products={products} onExit={exitToProducts} searchQuery={query} agentDecisions={agentDecisions} />
+          <ReportView isLoading={isLoading} products={products} onExit={exitToProducts} searchQuery={query}  report={state?.report}/>
         ) : currentView === "wishlist" ? (
           <WishlistView
             clearAllWishlist={() => {
@@ -426,6 +364,8 @@ export function ShoppingAssistant() {
           />
         ) : (
           <Canvas
+            start={run}
+            report={state?.report}
             products={state?.products}
             isLoading={isLoading && state?.products?.length == 0}
             query={query}
