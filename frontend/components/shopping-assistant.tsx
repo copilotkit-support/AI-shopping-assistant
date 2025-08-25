@@ -187,7 +187,7 @@ export function ShoppingAssistant() {
       favorites: [] as string[],
       buffer_products: [],
       logs: [] as ToolLog[],
-      report: {}
+      report: null
     }
   })
   const wishlistProducts = state?.products?.filter((product: any) => state?.favorites?.includes(product.id))
@@ -196,7 +196,7 @@ export function ShoppingAssistant() {
     name: "shopping_agent",
     render: (state1: any) => {
       // useEffect(() => {
-      console.log(state1, "state1")
+      // console.log(state1, "state1")
       // }, [state1])
 
       return <ToolLogs logs={state1?.state?.logs || []} />
