@@ -145,7 +145,8 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
               products: [],
               favorites: [] as string[],
               buffer_products: [],
-              logs: [] as ToolLog[]
+              logs: [] as ToolLog[],
+              report: null
             })
           }} size="sm" className="text-[#575758] bg-blue-200 rounded-full hover:bg-[#f0f0f0] ml-auto">
             <span className="mr-1">🔄</span> Reset
