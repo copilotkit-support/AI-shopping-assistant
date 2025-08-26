@@ -114,7 +114,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     
     messages = state["messages"]
     
-    system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}"
+    system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}. If the user asks any general question, you can just reply with some general replies. But if user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'."
     # system_message = ''
     state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
     response0 = await model.bind_tools([
@@ -132,6 +132,17 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             update={
                 "buffer_products" : state["buffer_products"],
                 "messages" : response0
+            }
+        )
+    if (response0.content != 'SEARCH'):
+        state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content=response0.content))
+        state["logs"] = []
+        await copilotkit_emit_state(config, state)
+        return Command(
+            goto=END,
+            update={
+                "buffer_products" : state["buffer_products"],
+                "messages" : state["messages"]
             }
         )
     
