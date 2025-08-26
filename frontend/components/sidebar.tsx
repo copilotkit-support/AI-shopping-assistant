@@ -149,7 +149,8 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
               favorites: [] as string[],
               buffer_products: [],
               logs: [] as ToolLog[],
-              report: null
+              report: null,
+              show_results: false
             })
           }} size="sm" className="text-[#575758] bg-blue-200 rounded-full hover:bg-[#f0f0f0] ml-auto">
             <span className="">➕</span> New Chat

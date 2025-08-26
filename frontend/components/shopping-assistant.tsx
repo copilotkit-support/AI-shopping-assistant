@@ -187,7 +187,8 @@ export function ShoppingAssistant() {
       favorites: [] as string[],
       buffer_products: [],
       logs: [] as ToolLog[],
-      report: null
+      report: null,
+      show_results: false
     }
   })
   const wishlistProducts = state?.products?.filter((product: any) => state?.favorites?.includes(product.id))
@@ -327,8 +328,10 @@ export function ShoppingAssistant() {
 
   useEffect(() => {
     console.log(visibleMessages.filter((message: any) => message?.role === "user"))
+    // if (state?.show_results) {
     // @ts-ignore
-    setQuery(visibleMessages.filter((message: any) => message?.role === "user")[0]?.content)
+    setQuery(visibleMessages.filter((message: any) => message?.role === "user")[visibleMessages.filter((message: any) => message?.role === "user").length - 1]?.content)
+    // }
     // visibleMessages.filter((message : any) => message.type)
   }, [isLoading])
 
@@ -349,7 +352,7 @@ export function ShoppingAssistant() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {currentView === "report" ? (
-          <ReportView isLoading={isLoading} products={products} onExit={exitToProducts} searchQuery={query}  report={state?.report}/>
+          <ReportView isLoading={isLoading} products={products} onExit={exitToProducts} searchQuery={query} report={state?.report} />
         ) : currentView === "wishlist" ? (
           <WishlistView
             clearAllWishlist={() => {
@@ -366,6 +369,7 @@ export function ShoppingAssistant() {
         ) : (
           <Canvas
             start={run}
+            show_results={state?.show_results}
             report={state?.report}
             products={state?.products}
             isLoading={isLoading && state?.products?.length == 0}

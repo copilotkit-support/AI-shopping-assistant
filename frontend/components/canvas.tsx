@@ -51,6 +51,7 @@ interface CanvasProps {
   onGoToReport: () => void
   start: () => void
   report: any
+  show_results: boolean
 }
 
 export function Canvas({
@@ -58,13 +59,14 @@ export function Canvas({
   isLoading,
   query,
   wishlist,
+  show_results,
   onToggleWishlist,
   onDeleteProduct,
   onGoToWishlist,
   onGoToReport,
   start,
   report,
-  }: CanvasProps) {
+}: CanvasProps) {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
@@ -77,7 +79,7 @@ export function Canvas({
     )
   }
 
-  if (!query) {
+  if (!query && !show_results) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
         <div className="text-center max-w-md">
@@ -111,7 +113,7 @@ export function Canvas({
             onClick={() => {
               debugger
               console.log(report, "report")
-              if(!report){
+              if (!report) {
                 start()
               }
               onGoToReport()

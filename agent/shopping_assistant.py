@@ -28,6 +28,7 @@ class AgentState(CopilotKitState):
     buffer_products: List
     logs: List
     report: str
+    show_results: bool
 
 
 async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
@@ -80,6 +81,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         if(state["messages"][-1].content == "Show more products"):
             state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content='Some more products also has been added to be shown in the canvas'))
             state["logs"] = []
+            state["show_results"] = True
             await copilotkit_emit_state(config, state)
             return Command(
                 goto=END,
@@ -102,6 +104,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         response = await model.ainvoke(input=state['messages'])
         state["messages"].append(AIMessage(content=response.content, type="ai", id= str(uuid.uuid4())))
         state["logs"] = []
+        state["show_results"] = True
         await copilotkit_emit_state(config, state)
             
         return Command(
@@ -134,7 +137,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 "messages" : response0
             }
         )
-    if (response0.content != 'SEARCH'):
+    if (not response0.content.startswith('SEARCH')):
         state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content=response0.content))
         state["logs"] = []
         await copilotkit_emit_state(config, state)
@@ -273,8 +276,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     await copilotkit_emit_state(config, state)
     state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
     state["logs"] = []
+    state["show_results"] = True
     await copilotkit_emit_state(config, state)
-            
     return Command(
         goto=END,
         update={
