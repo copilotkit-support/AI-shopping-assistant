@@ -52,13 +52,15 @@ interface CanvasProps {
   start: () => void
   report: any
   show_results: boolean
+  wishlistLength: number
 }
 
 export function Canvas({
   products,
   isLoading,
-  query,
+  query,  
   wishlist,
+  wishlistLength,
   show_results,
   onToggleWishlist,
   onDeleteProduct,
@@ -69,7 +71,16 @@ export function Canvas({
 }: CanvasProps) {
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
+      <div className="flex-1 flex items-center justify-center bg-[#F7F7F9] relative">
+        {/* Wishlist button - top right */}
+        <Button
+          onClick={onGoToWishlist}
+          variant="outline"
+          className="absolute top-6 right-6 border-[#D8D8E5] hover:bg-[#E8E8EF] bg-white flex items-center gap-2 z-10"
+        >
+          <Heart className="w-4 h-4" />
+          Wishlist ({wishlistLength})
+        </Button>
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#86ECE4] animate-spin mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-[#030507] mb-2">Searching across multiple stores...</h3>
@@ -81,7 +92,16 @@ export function Canvas({
 
   if (!query && !show_results) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#F7F7F9]">
+      <div className="flex-1 flex items-center justify-center bg-[#F7F7F9] relative">
+        {/* Wishlist button - top right */}
+        <Button
+          onClick={onGoToWishlist}
+          variant="outline"
+          className="absolute top-6 right-6 border-[#D8D8E5] hover:bg-[#E8E8EF] bg-white flex items-center gap-2 z-10"
+        >
+          <Heart className="w-4 h-4" />
+          Wishlist ({wishlistLength})
+        </Button>
         <div className="text-center max-w-md">
           <Package className="w-16 h-16 text-[#858589] mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-[#030507] mb-2 font-['Roobert']">Ready to help you shop smarter</h3>
@@ -110,6 +130,14 @@ export function Canvas({
 
         <div className="flex gap-3">
           <Button
+            onClick={onGoToWishlist}
+            variant="outline"
+            className="border-[#D8D8E5] hover:bg-[#E8E8EF] bg-white flex items-center gap-2"
+          >
+            <Heart className="w-4 h-4" />
+            Wishlist ({wishlistLength})
+          </Button>
+          <Button
             onClick={() => {
               debugger
               console.log(report, "report")
@@ -123,15 +151,6 @@ export function Canvas({
           >
             <FileText className="w-4 h-4" />
             View Report
-          </Button>
-
-          <Button
-            onClick={onGoToWishlist}
-            variant="outline"
-            className="border-[#D8D8E5] hover:bg-[#E8E8EF] bg-white flex items-center gap-2"
-          >
-            <Heart className="w-4 h-4" />
-            Wishlist ({wishlist.length})
           </Button>
         </div>
       </div>

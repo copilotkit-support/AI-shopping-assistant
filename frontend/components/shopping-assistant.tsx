@@ -92,7 +92,19 @@ export function ShoppingAssistant() {
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [products, setProducts] = useState<any>(mockProducts)
-  const [wishlist, setWishlist] = useState<string[]>([])
+  const { state, setState, start, run } = useCoAgent({
+    name: "shopping_agent",
+    initialState: {
+      products: [],
+      favorites: [] as string[],
+      wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+      buffer_products: [],
+      logs: [] as ToolLog[],
+      report: null,
+      show_results: false
+    }
+  })
+  // const [wishlist, setWishlist] = useState(localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [])
   const [agentDecisions, setAgentDecisions] = useState({
     searchStrategy: "",
     databasesSearched: [] as string[],
@@ -107,10 +119,29 @@ export function ShoppingAssistant() {
   const [currentView, setCurrentView] = useState<"products" | "wishlist" | "report">("products")
 
   const toggleWishlist = (productId: string) => {
-    setState({
-      ...state,
-      favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId]
-    })
+    debugger
+    console.log('state?.favorites', state);
+
+    // setState({
+    //   ...state,
+    //   favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId]
+    // })
+    if (state?.wishlist.map((id: any) => id.id).includes(productId)) {
+      setState({
+        ...state,
+        favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
+        wishlist: state?.wishlist?.filter((product: any) => product.id !== productId)
+      })
+      localStorage.setItem("wishlist", JSON.stringify(state?.wishlist?.filter((product: any) => product.id !== productId)))
+    }
+    else {
+      setState({
+        ...state,
+        favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
+        wishlist: [...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]
+      })
+      localStorage.setItem("wishlist", JSON.stringify([...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]))
+    }
   }
 
   const deleteProduct = (productId: string) => {
@@ -131,6 +162,11 @@ export function ShoppingAssistant() {
       })
     }
   }
+
+  // useEffect(() => {
+  //   setWishlist(state?.products?.filter((product: any) => state?.favorites?.includes(product.id)))
+  //   localStorage.setItem("wishlist", JSON.stringify(state?.products?.filter((product: any) => state?.favorites?.includes(product.id))))
+  // }, [state?.products, state?.favorites])
 
   const goToReport = () => {
     setCurrentView("report")
@@ -180,17 +216,9 @@ export function ShoppingAssistant() {
   }
 
 
-  const { state, setState, start, run } = useCoAgent({
-    name: "shopping_agent",
-    initialState: {
-      products: [],
-      favorites: [] as string[],
-      buffer_products: [],
-      logs: [] as ToolLog[],
-      report: null,
-      show_results: false
-    }
-  })
+
+
+
   const wishlistProducts = state?.products?.filter((product: any) => state?.favorites?.includes(product.id))
 
   useCoAgentStateRender({
@@ -360,8 +388,13 @@ export function ShoppingAssistant() {
                 ...state,
                 favorites: []
               })
+              setState({
+                ...state,
+                wishlist: []
+              })
+              localStorage.setItem("wishlist", JSON.stringify([]))
             }}
-            products={wishlistProducts}
+            products={state?.wishlist}
             onExit={exitToProducts}
             onToggleWishlist={toggleWishlist}
             onDeleteProduct={deleteProduct}
@@ -374,6 +407,7 @@ export function ShoppingAssistant() {
             products={state?.products}
             isLoading={isLoading && state?.products?.length == 0}
             query={query}
+            wishlistLength={state?.wishlist?.length}
             wishlist={state?.favorites}
             onToggleWishlist={toggleWishlist}
             onDeleteProduct={deleteProduct}

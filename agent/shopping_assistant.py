@@ -26,6 +26,7 @@ class AgentState(CopilotKitState):
     products: List
     favorites: List
     buffer_products: List
+    wishlist: List
     logs: List
     report: str
     show_results: bool
