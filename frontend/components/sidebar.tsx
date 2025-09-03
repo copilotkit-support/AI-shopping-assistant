@@ -274,7 +274,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
                             {chat.chatName}
                           </div>
                           <div className="text-xs text-[#9CA3AF]">
-                            {chat.messages.length} messages • 1min ago
+                            {chat.messages.length} messages 
                           </div>
                         </div>
                         

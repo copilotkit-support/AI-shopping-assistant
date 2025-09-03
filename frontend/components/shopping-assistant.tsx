@@ -208,7 +208,7 @@ export function ShoppingAssistant() {
   useEffect(() => {
     debugger
     let index = conversationHistory.findIndex((conversation: any) => conversation.conversationId === currentChatId)
-    if (index) {
+    if (index != -1) {
       let modifiedConversation = conversationHistory
       modifiedConversation[index].messages = messages
       modifiedConversation[index].state = state
