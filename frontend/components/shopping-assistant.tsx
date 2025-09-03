@@ -105,7 +105,7 @@ const initialConvo = [{
   state: {
     products: [],
     favorites: [] as string[],
-    wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+    wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
     buffer_products: [],
     logs: [] as ToolLog[],
     report: null,
@@ -117,9 +117,9 @@ export function ShoppingAssistant() {
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const { setThreadId } = useCopilotContext()
-  const [conversationHistory, setConversationHistory] = useState<any>(localStorage.getItem("conversationHistory") ? (() => {
+  const [conversationHistory, setConversationHistory] = useState<any>(typeof window !== 'undefined' && window.localStorage.getItem("conversationHistory") ? (() => {
     debugger
-    let stored = JSON.parse(localStorage.getItem("conversationHistory") || "[]");
+    let stored = JSON.parse(window.localStorage.getItem("conversationHistory") || "[]");
     console.log(stored, "storedstoredstored");
 
     let fullMessages: any[] = [];
@@ -176,7 +176,7 @@ export function ShoppingAssistant() {
     initialState: conversationHistory.length > 0 ? { ...conversationHistory[0]?.state, show_results: (conversationHistory[0]?.state?.products?.length > 0 ? true : false) } : {
       products: [],
       favorites: [] as string[],
-      wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+      wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       buffer_products: [],
       logs: [] as ToolLog[],
       report: null,
@@ -187,7 +187,7 @@ export function ShoppingAssistant() {
   useEffect(() => {
     debugger
     console.log(conversationHistory[0], "conversationHistory");
-    // console.log(JSON.parse(localStorage.getItem("conversationHistory") || "[]")[0]?.messages, "conversationHistory");
+    // console.log(JSON.parse(window.localStorage.getItem("conversationHistory") || "[]")[0]?.messages, "conversationHistory");
     // setState(conversationHistory[0]?.state)
     // setCurrentChatId(conversationHistory[0]?.conversationId)
     // setMessages([new TextMessage({
@@ -201,7 +201,7 @@ export function ShoppingAssistant() {
     }
 
 
-    // setMessages(JSON.parse(localStorage.getItem("conversationHistory") || "[]")[0]?.messages)
+    // setMessages(JSON.parse(window.localStorage.getItem("conversationHistory") || "[]")[0]?.messages)
   }, [conversationHistory])
 
 
@@ -218,8 +218,10 @@ export function ShoppingAssistant() {
 
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleBeforeUnload = () => {
-      localStorage.setItem("conversationHistory", JSON.stringify(conversationHistory));
+      window.localStorage.setItem("conversationHistory", JSON.stringify(conversationHistory));
     };
 
     // Runs when user closes tab or refreshes
@@ -233,7 +235,7 @@ export function ShoppingAssistant() {
 
 
 
-  // const [wishlist, setWishlist] = useState(localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [])
+  // const [wishlist, setWishlist] = useState(window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [])
 
   const [currentView, setCurrentView] = useState<"products" | "wishlist" | "report">("products")
 
@@ -253,7 +255,7 @@ export function ShoppingAssistant() {
       state: {
         products: [],
         favorites: [] as string[],
-        wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+        wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
         buffer_products: [],
         logs: [] as ToolLog[],
         report: null,
@@ -268,7 +270,7 @@ export function ShoppingAssistant() {
     setState({
       products: [],
       favorites: [] as string[],
-      wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+      wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       buffer_products: [],
       logs: [] as ToolLog[],
       report: null,
@@ -290,7 +292,7 @@ export function ShoppingAssistant() {
       const conversation = conversationHistory[conversationIndex]
       setCurrentChatId(chatId)
       setMessages(conversation.messages || [])
-      setState({ ...conversation.state, show_results: (conversation.state.products.length > 0 ? true : false), wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [] })
+      setState({ ...conversation.state, show_results: (conversation.state.products.length > 0 ? true : false), wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [] })
       setCurrentView("products")
     }
   }
@@ -326,7 +328,9 @@ export function ShoppingAssistant() {
         favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
         wishlist: state?.wishlist?.filter((product: any) => product.id !== productId)
       })
-      localStorage.setItem("wishlist", JSON.stringify(state?.wishlist?.filter((product: any) => product.id !== productId)))
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem("wishlist", JSON.stringify(state?.wishlist?.filter((product: any) => product.id !== productId)))
+      }
     }
     else {
       setState({
@@ -334,7 +338,9 @@ export function ShoppingAssistant() {
         favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
         wishlist: [...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]
       })
-      localStorage.setItem("wishlist", JSON.stringify([...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]))
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem("wishlist", JSON.stringify([...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]))
+      }
     }
   }
 
@@ -359,7 +365,7 @@ export function ShoppingAssistant() {
 
   // useEffect(() => {
   //   setWishlist(state?.products?.filter((product: any) => state?.favorites?.includes(product.id)))
-  //   localStorage.setItem("wishlist", JSON.stringify(state?.products?.filter((product: any) => state?.favorites?.includes(product.id))))
+  //   window.localStorage.setItem("wishlist", JSON.stringify(state?.products?.filter((product: any) => state?.favorites?.includes(product.id))))
   // }, [state?.products, state?.favorites])
 
   const goToReport = () => {
@@ -576,7 +582,9 @@ export function ShoppingAssistant() {
                 ...state,
                 wishlist: []
               })
-              localStorage.setItem("wishlist", JSON.stringify([]))
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem("wishlist", JSON.stringify([]))
+              }
             }}
             products={state?.wishlist}
             onExit={exitToProducts}
