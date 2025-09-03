@@ -206,13 +206,14 @@ export function ShoppingAssistant() {
 
 
   useEffect(() => {
+    debugger
     let index = conversationHistory.findIndex((conversation: any) => conversation.conversationId === currentChatId)
-    // if (index) {
-    let modifiedConversation = conversationHistory
-    modifiedConversation[index].messages = messages
-    modifiedConversation[index].state = state
-    setConversationHistory(modifiedConversation)
-    // }
+    if (index) {
+      let modifiedConversation = conversationHistory
+      modifiedConversation[index].messages = messages
+      modifiedConversation[index].state = state
+      setConversationHistory(modifiedConversation)
+    }
 
   }, [messages, currentChatId])
 
@@ -245,9 +246,9 @@ export function ShoppingAssistant() {
     return words.length > 30 ? words.substring(0, 30) + '...' : words
   }
 
-  const handleCreateNewChat = () => {
+  const handleCreateNewChat = (from="not-del") => {
     debugger
-    const newChatId = Math.max(...conversationHistory.map((c: any) => c.conversationId)) + 1
+    const newChatId = from != "del" ? Math.max(...conversationHistory.map((c: any) => c.conversationId)) + 1 : 1
     const newChat = {
       conversationId: newChatId,
       chatName: "Conversation " + newChatId,
@@ -298,22 +299,26 @@ export function ShoppingAssistant() {
   }
 
   const handleRenameChat = (chatId: number, newName: string) => {
-    setChatSessions(prev => prev.map(chat =>
-      chat.id === chatId ? { ...chat, name: newName } : chat
+    setConversationHistory((prev: any) => prev.map((chat: any) =>
+      chat.conversationId === chatId ? { ...chat, chatName: newName } : chat
     ))
   }
 
   const handleDeleteChat = (chatId: number) => {
-    if (chatSessions.length <= 1) return // Don't delete the last chat
+    debugger
+    // if (conversationHistory.length <= 1) return // Don't delete the last chat
 
-    setChatSessions(prev => prev.filter(chat => chat.id !== chatId))
+    // setChatSessions(prev => prev.filter(chat => chat.id !== chatId))
     setConversationHistory((prev: any) => prev.filter((conv: any) => conv.conversationId !== chatId))
 
     // If we're deleting the current chat, switch to another one
     if (currentChatId === chatId) {
-      const remainingChats = chatSessions.filter(chat => chat.id !== chatId)
+      const remainingChats = conversationHistory.filter((chat: any) => chat.conversationId !== chatId)
       if (remainingChats.length > 0) {
-        handleSwitchChat(remainingChats[0].id)
+        handleSwitchChat(remainingChats[0].conversationId)
+      }
+      else {
+        handleCreateNewChat("del")
       }
     }
   }

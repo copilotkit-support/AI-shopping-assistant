@@ -279,7 +279,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
                         </div>
                         
                         {/* Action Menu */}
-                        {/* <DropdownMenu>
+                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
@@ -313,7 +313,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu> */}
+                        </DropdownMenu>
                       </DropdownMenuItem>
                     )}
                   </div>
