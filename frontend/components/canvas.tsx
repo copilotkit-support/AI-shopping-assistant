@@ -124,7 +124,7 @@ export function Canvas({
         <div>
           <h2 className="text-2xl font-semibold text-[#030507] mb-2 font-['Roobert']">Product Recommendations</h2>
           <p className="text-[#575758]">
-            Found {products.length} AI-curated products for "{query}"
+            Found {products.length} AI-curated products
           </p>
         </div>
 
@@ -146,7 +146,8 @@ export function Canvas({
               }
               onGoToReport()
             }}
-            disabled={!query || products.length === 0}
+            disabled={ products.length === 0}
+            // disabled={!query || products.length === 0}
             className="bg-[#1B606F] hover:bg-[#86ECE4] hover:text-[#030507] text-white flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Sparkles, User, Bot, TrendingUp, Heart } from "lucide-react"
+import { Send, Sparkles, User, Bot, TrendingUp, Heart, ChevronDown, MessageSquare, Plus, MoreHorizontal, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { CopilotChat } from "@copilotkit/react-ui"
 import { useCopilotChat } from "@copilotkit/react-core"
 import { ToolLog } from "./tool-logs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 interface Message {
   id: string
   type: "user" | "assistant"
@@ -40,6 +41,14 @@ interface Product {
   }
 }
 
+interface ChatSession {
+  id: number
+  name: string
+  timestamp: Date
+  messageCount: number
+  lastActivity: Date
+}
+
 interface SidebarProps {
   setQuery: (query: string) => void
   clearState: (state: any) => void
@@ -50,6 +59,13 @@ interface SidebarProps {
   currentView: "products" | "wishlist" | "report"
   wishlistCount: number
   goToProducts: () => void
+  currentChatId: number
+  isLoading: boolean
+  chatSessions: any[]
+  onSwitchChat: (chatId: number) => void
+  onCreateNewChat: () => void
+  onRenameChat: (chatId: number, newName: string) => void
+  onDeleteChat: (chatId: number) => void
 }
 
 const initialMessages: Message[] = [
@@ -66,6 +82,7 @@ const quickSuggestions = ["Compare these laptops", "Which has better battery lif
 
 export function Sidebar({
   setQuery,
+  isLoading,
   clearState,
   onSearch,
   suggestions,
@@ -74,12 +91,53 @@ export function Sidebar({
   currentView,
   wishlistCount,
   goToProducts,
+  currentChatId,
+  chatSessions,
+  onSwitchChat,
+  onCreateNewChat,
+  onRenameChat,
+  onDeleteChat,
 }: SidebarProps) {
-  // const [messages, setMessages] = useState<Message[]>(initialMessages)
-  // const [inputValue, setInputValue] = useState("")
-  // const [isTyping, setIsTyping] = useState(false)
-  // const scrollAreaRef = useRef<HTMLDivElement>(null)
-  // const inputRef = useRef<HTMLInputElement>(null)
+  const [editingChatId, setEditingChatId] = useState<number | null>(null)
+  const [editingName, setEditingName] = useState("")
+  useEffect(() => {
+    debugger
+    console.log(chatSessions, "chatSessions");
+    
+    // setCurrentChatId(chatSessions[0]?.conversationId)
+  }, [])
+  // let currentChat = null;
+  // if(chatSessions && Array.isArray(chatSessions)){
+  
+  const currentChat = chatSessions?.find(chat => chat.conversationId === currentChatId)
+  // }
+  
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString()
+  }
+
+  const handleRenameSubmit = (chatId: number) => {
+    if (editingName.trim()) {
+      onRenameChat(chatId, editingName.trim())
+    }
+    setEditingChatId(null)
+    setEditingName("")
+  }
+
+  const startEditing = (chat:any) => {
+    setEditingChatId(chat.conversationId)
+    setEditingName(chat.chatName)
+  }
 
 
 
@@ -122,39 +180,158 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
     }
   }
 
-  const { reset } = useCopilotChat()
 
 
   return (
     <div className="flex flex-col min-h-screen w-80 bg-[#FAFCFA] border-r border-[#D8D8E5]">
       {/* Header */}
       <div className="p-4 border-b border-[#D8D8E5] bg-white">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-3">
           <div className="text-2xl">🪁</div>
-          <div>
-            <h1 className="text-lg font-semibold text-[#030507] font-['Roobert']">Assistant Shopper Chat</h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-[#030507] font-['Roobert']">Shopping Assistant</h1>
             <Badge variant="secondary" className="text-xs bg-[#BEC9FF] text-[#030507] font-semibold">
               PRO
             </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-[#575758]">{getViewTitle()}</p>
-          <Button onClick={() => {
-            goToProducts()
-            reset()
-            setQuery("")
-            clearState({
-              products: [],
-              favorites: [] as string[],
-              buffer_products: [],
-              logs: [] as ToolLog[],
-              report: null,
-              show_results: false
-            })
-          }} size="sm" className="text-[#575758] bg-blue-200 rounded-full hover:bg-[#f0f0f0] ml-auto">
-            <span className="">➕</span> New Chat
-          </Button>
+        
+        {/* Chat Dropdown */}
+        <div className="space-y-2">
+          <DropdownMenu >
+            <DropdownMenuTrigger disabled={isLoading} asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between bg-[#F8F9FD] border-[#E8E8EF] hover:bg-[#F0F1F7] text-left h-auto p-3"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <MessageSquare className="w-4 h-4 text-[#6B7280] flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-[#030507] truncate">
+                      {currentChat?.chatName || "New Chat"}
+                    </div>
+                    <div className="text-xs text-[#6B7280]">
+                      {currentChat ? `${currentChat.messages.length} messages` : "Start a conversation"}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown className="w-4 h-4 text-[#6B7280] flex-shrink-0" />
+              </Button>
+            </DropdownMenuTrigger>
+            
+            <DropdownMenuContent align="start" className="w-72 bg-white border-[#D8D8E5] shadow-lg">
+              {/* New Chat Option */}
+              <DropdownMenuItem 
+                onClick={onCreateNewChat}
+                className="flex items-center gap-3 p-3 hover:bg-[#F8F9FD] cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#86ECE4] to-[#BEC9FF] flex items-center justify-center flex-shrink-0">
+                  <Plus className="w-4 h-4 text-[#030507]" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-[#030507]">New Chat</div>
+                  <div className="text-xs text-[#6B7280]">Start a fresh conversation</div>
+                </div>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator className="bg-[#E8E8EF]" />
+              
+              {/* Chat History */}
+              <div className="max-h-64 overflow-y-auto">
+                {chatSessions && Array.isArray(chatSessions) ? chatSessions.map((chat) => (
+                  <div key={chat.conversationId} className="group">
+                    {editingChatId === chat.conversationId ? (
+                      <div className="p-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-[#6B7280] flex-shrink-0" />
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            debugger
+                            if (e.key === 'Enter') handleRenameSubmit(chat.conversationId)
+                            if (e.key === 'Escape') {
+                              setEditingChatId(null)
+                              setEditingName("")
+                            }
+                          }}
+                          onBlur={() => handleRenameSubmit(chat.conversationId)}
+                          className="flex-1 h-6 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
+                      <DropdownMenuItem 
+                        onClick={() => onSwitchChat(chat.conversationId)}
+                        className="flex items-center gap-3 p-3 hover:bg-[#F8F9FD] cursor-pointer relative group"
+                      >
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          chat.conversationId === currentChatId ? 'bg-[#86ECE4]' : 'bg-[#E8E8EF]'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-medium truncate ${
+                            chat.conversationId === currentChatId ? 'text-[#030507]' : 'text-[#6B7280]'
+                          }`}>
+                            {chat.chatName}
+                          </div>
+                          <div className="text-xs text-[#9CA3AF]">
+                            {chat.messages.length} messages • 1min ago
+                          </div>
+                        </div>
+                        
+                        {/* Action Menu */}
+                        {/* <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 hover:bg-[#E8E8EF]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3 h-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                debugger
+                                e.stopPropagation()
+                                startEditing(chat)
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onDeleteChat(chat.conversationId)
+                              }}
+                              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu> */}
+                      </DropdownMenuItem>
+                    )}
+                  </div>
+                )) : null}
+              </div>
+              
+              {(!chatSessions || !Array.isArray(chatSessions) || chatSessions.length === 0) && (
+                <div className="p-4 text-center text-[#6B7280] text-sm">
+                  No chat history yet
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* View Status */}
+          <div className="text-xs text-[#6B7280] px-1">
+            {getViewTitle()}
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-auto">

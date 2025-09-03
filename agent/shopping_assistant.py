@@ -37,52 +37,111 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
     This is the chat node of the agent.
     It is a function that takes in the state of the agent and the config and returns the state of the agent.
     """
-    if config is None:
-        config = RunnableConfig(recursion_limit=25)
-    else:
-        # Use CopilotKit's custom config functions to properly set up streaming
-        config = copilotkit_customize_config(config, emit_messages=False, emit_tool_calls=True)
-    
-    if not os.getenv("TAVILY_API_KEY"):
-        raise RuntimeError("Missing TAVILY_API_KEY")
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("Missing OPENAI_API_KEY")
-    if state['messages'][-1].type == 'ai':
-        result =await generate_report(state["products"])
-        print(result, "result")
-        return Command(
-            goto=END,
-            update={
-                **state,
-                "report" : json.loads(result)
-            }
-        )
-    model = ChatOpenAI(streaming=False)
-    state["logs"].append({
-        "message" : "Analyzing user query",
-        "status" : "processing"
-    })
-    await copilotkit_emit_state(config, state)
-    await asyncio.sleep(1)
-    state["logs"][-1]["status"] = "completed"
-    await copilotkit_emit_state(config, state)
-    query = state["messages"][-1].content
-    products_for_prompt = []
-    wishlist_for_prompt = []
-    for product in state["products"]:
-        products_for_prompt.append({
-            "name" : product["title"],
-            "id" : product["id"],
+    try:
+        if config is None:
+            config = RunnableConfig(recursion_limit=25)
+        else:
+            # Use CopilotKit's custom config functions to properly set up streaming
+            config = copilotkit_customize_config(config, emit_messages=False, emit_tool_calls=True)
+            
+        if not os.getenv("TAVILY_API_KEY"):
+            raise RuntimeError("Missing TAVILY_API_KEY")
+        if not os.getenv("OPENAI_API_KEY"):
+            raise RuntimeError("Missing OPENAI_API_KEY")
+        if state['messages'][-1].type == 'ai':
+            result =await generate_report(state["products"])
+            print(result, "result")
+            return Command(
+                goto=END,
+                update={
+                    **state,
+                    "report" : json.loads(result)
+                }
+            )
+        model = ChatOpenAI(model="gpt-4o-mini")
+        state["logs"].append({
+            "message" : "Analyzing user query",
+            "status" : "processing"
         })
-    for product in state["favorites"]:
-        wishlist_for_prompt.append({
-            "id" : product,
-        })
-    if(state["messages"][-1].type == 'tool'):
-        if(state["messages"][-1].content == "Show more products"):
-            state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content='Some more products also has been added to be shown in the canvas'))
+        await copilotkit_emit_state(config, state)
+        await asyncio.sleep(1)
+        state["logs"][-1]["status"] = "completed"
+        await copilotkit_emit_state(config, state)
+        query = state["messages"][-1].content
+        products_for_prompt = []
+        wishlist_for_prompt = []
+        for product in state["products"]:
+            products_for_prompt.append({
+                "name" : product["title"],
+                "id" : product["id"],
+            })
+        for product in state["favorites"]:
+            wishlist_for_prompt.append({
+                "id" : product,
+            })
+        if(state["messages"][-1].type == 'tool'):
+            if(state["messages"][-1].content == "Show more products"):
+                state["messages"].append(AIMessage(id=state["messages"][-2].tool_calls[0]['id'], type="ai",  content='Some more products also has been added to be shown in the canvas'))
+                state["logs"] = []
+                state["show_results"] = True
+                await copilotkit_emit_state(config, state)
+                return Command(
+                    goto=END,
+                    update={
+                        "buffer_products" : state["buffer_products"],
+                        "messages" : state["messages"]
+                    }
+                )
+            if(state["messages"][-1].content == "Rejected"):
+                state["messages"].append(AIMessage(id=state["messages"][-2].tool_calls[0]['id'], type="ai",  content='You have rejected the products. Please try any other product search.'))
+                state["logs"] = []
+                await copilotkit_emit_state(config, state)
+                return Command(
+                    goto=END,
+                    update={
+                        "buffer_products" : state["buffer_products"],
+                        "messages" : state["messages"]
+                    }
+                )            
+            response = await model.ainvoke(input=state['messages'])
+            state["messages"].append(AIMessage(content=response.content, type="ai", id= state["messages"][-2].tool_calls[0]['id']))
             state["logs"] = []
             state["show_results"] = True
+            await copilotkit_emit_state(config, state)
+                
+            return Command(
+                goto=END,
+                update={
+                    "messages" : state["messages"],
+                    "buffer_products" : state["buffer_products"]
+                }
+            )
+        
+        messages = state["messages"]
+        
+        system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}. If the user asks any general question, you can just reply with some general replies. But if user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'."
+        # system_message = ''
+        state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
+        response0 = await model.bind_tools([
+            *state["copilotkit"]["actions"]
+        ]).ainvoke([
+            system_message,
+            *messages
+        ],config=config)
+        if hasattr(response0, "tool_calls") and response0.tool_calls and response0.content == '':        
+            state["logs"] = []
+            await copilotkit_emit_state(config, state)
+                
+            return Command(
+                goto=END,
+                update={
+                    "buffer_products" : state["buffer_products"],
+                    "messages" : response0
+                }
+            )
+        if (not response0.content.startswith('SEARCH')):
+            state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content=response0.content))
+            state["logs"] = []
             await copilotkit_emit_state(config, state)
             return Command(
                 goto=END,
@@ -91,201 +150,162 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     "messages" : state["messages"]
                 }
             )
-        if(state["messages"][-1].content == "Rejected"):
-            state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content='You have rejected the products. Please try any other product search.'))
-            state["logs"] = []
-            await copilotkit_emit_state(config, state)
-            return Command(
-                goto=END,
-                update={
-                    "buffer_products" : state["buffer_products"],
-                    "messages" : state["messages"]
-                }
-            )            
-        response = await model.ainvoke(input=state['messages'])
-        state["messages"].append(AIMessage(content=response.content, type="ai", id= str(uuid.uuid4())))
-        state["logs"] = []
-        state["show_results"] = True
+        
+        
+        
+        
+        
+        query = state["messages"][-1].content
+        max_search_results = 8
+        target_follow = 6
+
+        tv = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+        results_all: List[Dict[str, Any]] = []
+        total_mappings_list = []
+        state["logs"].append({
+            "message" : "Identifying the sites to search",
+            "status" : "processing"
+        })
         await copilotkit_emit_state(config, state)
-            
-        return Command(
-            goto=END,
-            update={
-                "messages" : state["messages"],
-                "buffer_products" : state["buffer_products"]
-            }
-        )
-    
-    messages = state["messages"]
-    
-    system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}. If the user asks any general question, you can just reply with some general replies. But if user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'."
-    # system_message = ''
-    state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
-    response0 = await model.bind_tools([
-        *state["copilotkit"]["actions"]
-    ]).ainvoke([
-        system_message,
-        *messages
-    ],config=config)
-    if hasattr(response0, "tool_calls") and response0.tool_calls and response0.content == '':        
-        state["logs"] = []
+        await asyncio.sleep(1)
+        state["logs"][-1]["status"] = "completed"
         await copilotkit_emit_state(config, state)
-            
-        return Command(
-            goto=END,
-            update={
-                "buffer_products" : state["buffer_products"],
-                "messages" : response0
-            }
+        # 1) Broad search across retailers
+        search = tv.search(
+            query=query,
+            include_domains=RETAILERS,
+            include_answer=False,
+            include_images=False,
+            include_raw_content=False,
+            search_depth="advanced",
+            max_results=max_search_results,
         )
-    if (not response0.content.startswith('SEARCH')):
-        state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  content=response0.content))
-        state["logs"] = []
+        urls = [r["url"] for r in search.get("results", []) if r.get("url")]
+        if not urls:
+            return []
+
+        state["logs"].append({
+            "message" : "Extracting the sites",
+            "status" : "processing"
+        })
         await copilotkit_emit_state(config, state)
-        return Command(
-            goto=END,
-            update={
-                "buffer_products" : state["buffer_products"],
-                "messages" : state["messages"]
-            }
-        )
-    
-    
-    
-    
-    
-    query = state["messages"][-1].content
-    max_search_results = 8
-    target_follow = 6
-
-    tv = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-    results_all: List[Dict[str, Any]] = []
-    total_mappings_list = []
-    state["logs"].append({
-        "message" : "Identifying the sites to search",
-        "status" : "processing"
-    })
-    await copilotkit_emit_state(config, state)
-    await asyncio.sleep(1)
-    state["logs"][-1]["status"] = "completed"
-    await copilotkit_emit_state(config, state)
-    # 1) Broad search across retailers
-    search = tv.search(
-        query=query,
-        include_domains=RETAILERS,
-        include_answer=False,
-        include_images=False,
-        include_raw_content=False,
-        search_depth="advanced",
-        max_results=max_search_results,
-    )
-    urls = [r["url"] for r in search.get("results", []) if r.get("url")]
-    if not urls:
-        return []
-
-    state["logs"].append({
-        "message" : "Extracting the sites",
-        "status" : "processing"
-    })
-    await copilotkit_emit_state(config, state)
-    await asyncio.sleep(1)
-    # 2) First extract pass
-    ext1 = tv.extract(urls, extract_depth="advanced", include_images=True)
-    state["logs"][-1]["status"] = "completed"
-    await copilotkit_emit_state(config, state)
-    
-    target_listing_pdps: List[str] = []
-    done = False
-    state["logs"].append({
-        "message" : "Processing the data",
-        "status" : "processing"
-    })
-    await copilotkit_emit_state(config, state)
-    # await asyncio.sleep(1)
-    for item in ext1.get("results", []):
-        url = item["url"]
-        raw = item.get("raw_content") or ""
-        if not raw:
-            continue
-        modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
-        total_mappings_list.extend(mappings_list)
-        dom = retailer_of(url)
-        detail_hint = is_pdp(url)
-        assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
-        prompt = build_llm_prompt(modiefied_text, url, assist=assist, detail_hint=detail_hint)
-        try:
-            if len(results_all) > 10:
-                break
-            print(f"Calling LLM for {url}")
-            data = call_llm(prompt)
-            print(f"Completed extracting {url}")
-            done = True
-        except Exception as e:
-            # If LLM fails, skip this page
-            print(f"LLM 1st-pass failed for {url}: {e}")
-            continue
-
-        data.setdefault("source_url", url)
-        data.setdefault("retailer", dom)
-
-        # Enforce PDP URLs only for Target to avoid promo tiles
-        if "target.com" in dom:
-            pdps = filter_only_pdps(data.get("products", []))
-            data["products"] = pdps
-            # If thin or empty, harvest PDPs from listing HTML
-            if not pdps:
-                harvested = find_target_pdps_in_html(raw, url)
-                target_listing_pdps.extend(harvested[:target_follow])
-
-        results_all += data["products"]
-
-    
-    
-    # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
-    target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
-    if target_listing_pdps:
-        ext2 = tv.extract(target_listing_pdps, extract_depth="advanced", include_images=True)
-        for item in ext2.get("results", []):
+        await asyncio.sleep(1)
+        # 2) First extract pass
+        ext1 = tv.extract(urls, extract_depth="advanced", include_images=True)
+        state["logs"][-1]["status"] = "completed"
+        await copilotkit_emit_state(config, state)
+        
+        target_listing_pdps: List[str] = []
+        done = False
+        state["logs"].append({
+            "message" : "Processing the data",
+            "status" : "processing"
+        })
+        await copilotkit_emit_state(config, state)
+        # await asyncio.sleep(1)
+        for item in ext1.get("results", []):
             url = item["url"]
             raw = item.get("raw_content") or ""
             if not raw:
                 continue
-            assist = parse_target_structured(raw)
-            prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=True)
+            modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
+            total_mappings_list.extend(mappings_list)
+            dom = retailer_of(url)
+            detail_hint = is_pdp(url)
+            assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
+            prompt = build_llm_prompt(modiefied_text, url, assist=assist, detail_hint=detail_hint)
             try:
+                if len(results_all) > 10:
+                    break
+                print(f"Calling LLM for {url}")
                 data = call_llm(prompt)
-                data["source_url"] = url
-                data["retailer"] = "target.com"
-                # Keep exactly one product for PDP
-                if data.get("products"):
-                    data["products"] = data["products"][:1]
-                    results_all.append(data)
+                print(f"Completed extracting {url}")
+                done = True
             except Exception as e:
-                print(f"Target PDP enrich failed for {url}: {e}")
-    
-    
-    for item in results_all:
-        item["id"] = str(uuid.uuid4())
-    state["logs"][-1]["status"] = "completed"
-    await copilotkit_emit_state(config, state)
-    
-    updated_products = apply_url_mappings_to_products(results_all, total_mappings_list)
+                # If LLM fails, skip this page
+                print(f"LLM 1st-pass failed for {url}: {e}")
+                continue
+
+            data.setdefault("source_url", url)
+            data.setdefault("retailer", dom)
+
+            # Enforce PDP URLs only for Target to avoid promo tiles
+            if "target.com" in dom:
+                pdps = filter_only_pdps(data.get("products", []))
+                data["products"] = pdps
+                # If thin or empty, harvest PDPs from listing HTML
+                if not pdps:
+                    harvested = find_target_pdps_in_html(raw, url)
+                    target_listing_pdps.extend(harvested[:target_follow])
+
+            results_all += data["products"]
+
         
-    state["buffer_products"] = updated_products
-    # state["buffer_products"] = results_all
+        
+        # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
+        target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
+        if target_listing_pdps:
+            ext2 = tv.extract(target_listing_pdps, extract_depth="advanced", include_images=True)
+            for item in ext2.get("results", []):
+                url = item["url"]
+                raw = item.get("raw_content") or ""
+                if not raw:
+                    continue
+                assist = parse_target_structured(raw)
+                prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=True)
+                try:
+                    data = call_llm(prompt)
+                    data["source_url"] = url
+                    data["retailer"] = "target.com"
+                    # Keep exactly one product for PDP
+                    if data.get("products"):
+                        data["products"] = data["products"][:1]
+                        results_all.append(data)
+                except Exception as e:
+                    print(f"Target PDP enrich failed for {url}: {e}")
+        
+        
+        for item in results_all:
+            item["id"] = str(uuid.uuid4())
+        state["logs"][-1]["status"] = "completed"
+        await copilotkit_emit_state(config, state)
+        
+        updated_products = apply_url_mappings_to_products(results_all, total_mappings_list)
+            
+        state["buffer_products"] = updated_products
+        # state["buffer_products"] = results_all
+        
+        await copilotkit_emit_state(config, state)
+        state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
+        state["logs"] = []
+        state["show_results"] = True
+        await copilotkit_emit_state(config, state)
+        return Command(
+            goto=END,
+            update={
+                "messages": state["messages"],
+                "buffer_products" : state["buffer_products"],
+                "report" : None
+            }
+        )
+    except Exception as e:
+        print(e, "error")
+        if e.code == "context_length_exceeded":
+            error_message = AIMessage(content="Context length limit exceeded. Please try your query in a new chat.", id=str(uuid.uuid4()), type="ai")
+            state["logs"] = []
+            state["messages"].append(error_message)
+        else:
+            error_message = AIMessage(content="Something went wrong. Please try your query in a new chat.", id=str(uuid.uuid4()), type="ai")
+            state["messages"].append(error_message)
+            state["logs"] = []
+        return Command(
+            goto=END,
+            update={
+                "messages": state["messages"],
+            }
+        )
     
-    await copilotkit_emit_state(config, state)
-    state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
-    state["logs"] = []
-    state["show_results"] = True
-    await copilotkit_emit_state(config, state)
-    return Command(
-        goto=END,
-        update={
-            "messages": state["messages"],
-            "buffer_products" : state["buffer_products"]
-        }
-    )
+    
     
     
     

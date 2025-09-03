@@ -5,10 +5,12 @@ import { Sidebar } from "@/components/sidebar"
 import { Canvas } from "@/components/canvas"
 import { WishlistView } from "@/components/wishlist-view"
 import { ReportView } from "@/components/report-view"
-import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat } from "@copilotkit/react-core"
+import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotChat, useCopilotContext, useCopilotMessagesContext } from "@copilotkit/react-core"
 import DialogBox from "./tool-response"
 import { useCopilotChatSuggestions } from "@copilotkit/react-ui"
 import { ToolLog, ToolLogs } from "./tool-logs"
+import { TextMessage, ActionExecutionMessage, ResultMessage, AgentStateMessage, Role, Message } from "@copilotkit/runtime-client-gql"
+
 const mockProducts = [
   {
     id: "1",
@@ -88,13 +90,90 @@ const mockSuggestions = [
   "Budget 4K monitors under $400",
 ]
 
+interface ChatSession {
+  id: number
+  name: string
+  timestamp: Date
+  messageCount: number
+  lastActivity: Date
+}
+
+const initialConvo = [{
+  conversationId: 1,
+  messages: [],
+  chatName: "Conversation 1",
+  state: {
+    products: [],
+    favorites: [] as string[],
+    wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+    buffer_products: [],
+    logs: [] as ToolLog[],
+    report: null,
+    show_results: false
+  }
+}]
+
 export function ShoppingAssistant() {
   const [query, setQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
-  const [products, setProducts] = useState<any>(mockProducts)
+  const { setThreadId } = useCopilotContext()
+  const [conversationHistory, setConversationHistory] = useState<any>(localStorage.getItem("conversationHistory") ? (() => {
+    debugger
+    let stored = JSON.parse(localStorage.getItem("conversationHistory") || "[]");
+    console.log(stored, "storedstoredstored");
+
+    let fullMessages: any[] = [];
+    for (const conversation of stored) {
+      let finalMessages = [];
+      for (const message of conversation?.messages) {
+        if (message?.type === "TextMessage") {
+          finalMessages.push(new TextMessage({
+            role: message?.role === "user" ? Role.User : Role.Assistant,
+            content: message?.content
+          }));
+        }
+        else if (message?.type === "ActionExecutionMessage") {
+          finalMessages.push(new ActionExecutionMessage({
+            name: message?.name,
+            arguments: message?.arguments
+          }));
+        }
+        else if (message?.type === "ResultMessage") {
+          finalMessages.push(new ResultMessage({
+            actionExecutionId: message?.actionExecutionId,
+            actionName: message?.actionName,
+            result: message?.result
+          }));
+        }
+        else if (message?.type === "AgentStateMessage") {
+          finalMessages.push(new AgentStateMessage({
+            agentName: message?.agentName,
+            state: message?.state
+          }));
+        }
+      }
+      fullMessages.push(finalMessages);
+    }
+    stored.forEach((conversation: any, index: number) => {
+      conversation.messages = fullMessages[index];
+    });
+    console.log("storedprocessed", stored);
+
+    return stored;
+  })() : initialConvo)
+  const { visibleMessages, isLoading, reset } = useCopilotChat()
+  const [currentChatId, setCurrentChatId] = useState<number>(conversationHistory.length > 0 ? conversationHistory[0]?.conversationId : 1)
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([{
+    id: 1,
+    name: "New Chat",
+    timestamp: new Date(),
+    messageCount: 0,
+    lastActivity: new Date()
+  }])
+  // const [products, setProducts] = useState<any>(mockProducts)
   const { state, setState, start, run } = useCoAgent({
     name: "shopping_agent",
-    initialState: {
+    initialState: conversationHistory.length > 0 ? { ...conversationHistory[0]?.state, show_results: (conversationHistory[0]?.state?.products?.length > 0 ? true : false) } : {
       products: [],
       favorites: [] as string[],
       wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
@@ -104,28 +183,143 @@ export function ShoppingAssistant() {
       show_results: false
     }
   })
+  const { messages, setMessages } = useCopilotMessagesContext();
+  useEffect(() => {
+    debugger
+    console.log(conversationHistory[0], "conversationHistory");
+    // console.log(JSON.parse(localStorage.getItem("conversationHistory") || "[]")[0]?.messages, "conversationHistory");
+    // setState(conversationHistory[0]?.state)
+    // setCurrentChatId(conversationHistory[0]?.conversationId)
+    // setMessages([new TextMessage({
+    //   role: Role.User,
+    //   content: "Hello, how are you?",
+    // })])
+    if ((conversationHistory[0]?.messages?.length > 0 && conversationHistory[conversationHistory.length - 1]?.messages?.length > 0)) {
+      console.log("Setting message here");
+
+      setMessages(conversationHistory[0]?.messages)
+    }
+
+
+    // setMessages(JSON.parse(localStorage.getItem("conversationHistory") || "[]")[0]?.messages)
+  }, [conversationHistory])
+
+
+  useEffect(() => {
+    let index = conversationHistory.findIndex((conversation: any) => conversation.conversationId === currentChatId)
+    // if (index) {
+    let modifiedConversation = conversationHistory
+    modifiedConversation[index].messages = messages
+    modifiedConversation[index].state = state
+    setConversationHistory(modifiedConversation)
+    // }
+
+  }, [messages, currentChatId])
+
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.setItem("conversationHistory", JSON.stringify(conversationHistory));
+    };
+
+    // Runs when user closes tab or refreshes
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [conversationHistory]);
+
+
+
   // const [wishlist, setWishlist] = useState(localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [])
-  const [agentDecisions, setAgentDecisions] = useState({
-    searchStrategy: "",
-    databasesSearched: [] as string[],
-    selectionCriteria: [] as string[],
-    replacementHistory: [] as Array<{
-      removedProduct: string
-      replacedWith: string
-      reason: string
-      timestamp: Date
-    }>,
-  })
+
   const [currentView, setCurrentView] = useState<"products" | "wishlist" | "report">("products")
+
+  // Chat management functions
+  const generateChatName = (firstMessage: string) => {
+    const words = firstMessage.split(' ').slice(0, 4).join(' ')
+    return words.length > 30 ? words.substring(0, 30) + '...' : words
+  }
+
+  const handleCreateNewChat = () => {
+    debugger
+    const newChatId = Math.max(...conversationHistory.map((c: any) => c.conversationId)) + 1
+    const newChat = {
+      conversationId: newChatId,
+      chatName: "Conversation " + newChatId,
+      messages: [],
+      state: {
+        products: [],
+        favorites: [] as string[],
+        wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+        buffer_products: [],
+        logs: [] as ToolLog[],
+        report: null,
+        show_results: false
+      }
+    }
+
+    setConversationHistory((prev: any) => [newChat, ...prev])
+    setCurrentChatId(newChatId)
+
+    // Reset current state
+    setState({
+      products: [],
+      favorites: [] as string[],
+      wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [],
+      buffer_products: [],
+      logs: [] as ToolLog[],
+      report: null,
+      show_results: false,
+      buffer_messages: []
+    })
+
+    // Clear messages and query
+    setMessages([])
+    setThreadId(newChatId.toString())
+    setQuery("")
+    setCurrentView("products")
+  }
+
+  const handleSwitchChat = (chatId: number) => {
+    debugger
+    const conversationIndex = conversationHistory.findIndex((conv: any) => conv.conversationId === chatId)
+    if (conversationIndex !== -1) {
+      const conversation = conversationHistory[conversationIndex]
+      setCurrentChatId(chatId)
+      setMessages(conversation.messages || [])
+      setState({ ...conversation.state, show_results: (conversation.state.products.length > 0 ? true : false), wishlist: localStorage.getItem("wishlist") ? JSON.parse(localStorage.getItem("wishlist") || "[]") : [] })
+      setCurrentView("products")
+    }
+  }
+
+  const handleRenameChat = (chatId: number, newName: string) => {
+    setChatSessions(prev => prev.map(chat =>
+      chat.id === chatId ? { ...chat, name: newName } : chat
+    ))
+  }
+
+  const handleDeleteChat = (chatId: number) => {
+    if (chatSessions.length <= 1) return // Don't delete the last chat
+
+    setChatSessions(prev => prev.filter(chat => chat.id !== chatId))
+    setConversationHistory((prev: any) => prev.filter((conv: any) => conv.conversationId !== chatId))
+
+    // If we're deleting the current chat, switch to another one
+    if (currentChatId === chatId) {
+      const remainingChats = chatSessions.filter(chat => chat.id !== chatId)
+      if (remainingChats.length > 0) {
+        handleSwitchChat(remainingChats[0].id)
+      }
+    }
+  }
 
   const toggleWishlist = (productId: string) => {
     debugger
     console.log('state?.favorites', state);
 
-    // setState({
-    //   ...state,
-    //   favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId]
-    // })
     if (state?.wishlist.map((id: any) => id.id).includes(productId)) {
       setState({
         ...state,
@@ -185,31 +379,11 @@ export function ShoppingAssistant() {
     setQuery(searchQuery)
 
     // Set agent decisions based on search
-    setAgentDecisions({
-      searchStrategy: searchQuery.toLowerCase().includes("laptop")
-        ? "laptop comparison and recommendation"
-        : "product discovery and analysis",
-      databasesSearched: [
-        "Amazon Product API",
-        "Best Buy Catalog",
-        "Newegg Database",
-        "Manufacturer Websites",
-        "Review Aggregators",
-      ],
-      selectionCriteria: [
-        "User rating above 4.0 stars",
-        "Minimum 100 verified reviews",
-        "Price range optimization",
-        "Feature diversity for comparison",
-        "Availability and shipping options",
-      ],
-      replacementHistory: [],
-    })
 
     // Simulate API call
     setTimeout(() => {
       if (searchQuery.toLowerCase().includes("laptop") || searchQuery.toLowerCase().includes("computer")) {
-        setProducts(mockProducts)
+        // setProducts(mockProducts)
       }
       setIsSearching(false)
     }, 2000)
@@ -330,7 +504,7 @@ export function ShoppingAssistant() {
             products: args?.products,
             buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length)
           })
-          setProducts(args?.products)
+          // setProducts(args?.products)
         }
       }} onReject={() => { if (respond) respond("Rejected") }} onNeedInfo={() => {
         if (respond) {
@@ -340,7 +514,7 @@ export function ShoppingAssistant() {
             products: args?.buffer_products?.slice(0, 10),
             buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length)
           })
-          setProducts(args?.buffer_products?.slice(0, 10))
+          // setProducts(args?.buffer_products?.slice(0, 10))
         }
       }} />
     }
@@ -352,7 +526,10 @@ export function ShoppingAssistant() {
     instructions: "You need to provide suggestions for the user to buy products like laptops, phones, headphones, etc. Example suggestions: Find laptops under $1500, Find good smartphones for photography, Get me some wireless earbuds with ANC, Best smartphones under $500, Budget 4K monitors under $400",
   })
 
-  const { visibleMessages, isLoading } = useCopilotChat()
+  useEffect(() => {
+    console.log(visibleMessages, "visible");
+
+  })
 
   useEffect(() => {
     console.log(visibleMessages.filter((message: any) => message?.role === "user"))
@@ -372,15 +549,22 @@ export function ShoppingAssistant() {
         onSearch={handleSearch}
         suggestions={mockSuggestions}
         currentQuery={query}
+        isLoading={isLoading}
         isSearching={isSearching}
         currentView={currentView}
         wishlistCount={state?.favorites?.length}
         goToProducts={exitToProducts}
+        currentChatId={currentChatId}
+        chatSessions={conversationHistory}
+        onSwitchChat={handleSwitchChat}
+        onCreateNewChat={handleCreateNewChat}
+        onRenameChat={handleRenameChat}
+        onDeleteChat={handleDeleteChat}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
         {currentView === "report" ? (
-          <ReportView isLoading={isLoading} products={products} onExit={exitToProducts} searchQuery={query} report={state?.report} />
+          <ReportView isLoading={isLoading} products={state?.products} onExit={exitToProducts} searchQuery={query} report={state?.report} />
         ) : currentView === "wishlist" ? (
           <WishlistView
             clearAllWishlist={() => {
