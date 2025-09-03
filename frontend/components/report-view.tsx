@@ -59,7 +59,8 @@ export function ReportView({ products, onExit, searchQuery, report, isLoading }:
                 </Button>
                 <div>
                   <h1 className="text-2xl font-semibold text-[#030507] font-['Roobert']">AI Analysis Report</h1>
-                  <p className="text-[#575758]">Comprehensive analysis for "{searchQuery}"</p>
+                  <p className="text-[#575758]">Comprehensive analysis</p>
+                  {/* <p className="text-[#575758]">Comprehensive analysis for "{searchQuery}"</p> */}
                 </div>
               </div>
               <Badge variant="outline" className="bg-[#86ECE4] text-[#030507] border-[#86ECE4]">
