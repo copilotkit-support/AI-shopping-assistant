@@ -104,12 +104,16 @@ const initialConvo = [{
   chatName: "Conversation 1",
   state: {
     products: [],
-    favorites: [] as string[],
+    favorites: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
     wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
     buffer_products: [],
     logs: [] as ToolLog[],
     report: null,
-    show_results: false
+    show_results: false,
+    canvas_logs: {
+      title: "",
+      subtitle: ""
+    }
   }
 }]
 
@@ -118,7 +122,6 @@ export function ShoppingAssistant() {
   const [isSearching, setIsSearching] = useState(false)
   const { setThreadId } = useCopilotContext()
   const [conversationHistory, setConversationHistory] = useState<any>(typeof window !== 'undefined' && window.localStorage.getItem("conversationHistory") ? (() => {
-    debugger
     let stored = JSON.parse(window.localStorage.getItem("conversationHistory") || "[]");
     console.log(stored, "storedstoredstored");
 
@@ -175,12 +178,16 @@ export function ShoppingAssistant() {
     name: "shopping_agent",
     initialState: conversationHistory.length > 0 ? { ...conversationHistory[0]?.state, show_results: (conversationHistory[0]?.state?.products?.length > 0 ? true : false) } : {
       products: [],
-      favorites: [] as string[],
+      favorites: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       buffer_products: [],
       logs: [] as ToolLog[],
       report: null,
-      show_results: false
+      show_results: false,
+      canvas_logs: {
+        title: "",
+        subtitle: ""
+      }
     }
   })
   const { messages, setMessages } = useCopilotMessagesContext();
@@ -223,6 +230,7 @@ export function ShoppingAssistant() {
 
     const handleBeforeUnload = () => {
       window.localStorage.setItem("conversationHistory", JSON.stringify(conversationHistory));
+      // window.localStorage.setItem("wishlist", JSON.stringify(state?.favorites));
     };
 
     // Runs when user closes tab or refreshes
@@ -260,7 +268,11 @@ export function ShoppingAssistant() {
         buffer_products: [],
         logs: [] as ToolLog[],
         report: null,
-        show_results: false
+        show_results: false,
+        canvas_logs: {
+          title: "",
+          subtitle: ""
+        }
       }
     }
 
@@ -270,13 +282,17 @@ export function ShoppingAssistant() {
     // Reset current state
     setState({
       products: [],
-      favorites: [] as string[],
+      favorites: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [],
       buffer_products: [],
       logs: [] as ToolLog[],
       report: null,
       show_results: false,
-      buffer_messages: []
+      buffer_messages: [],
+      canvas_logs: {
+        title: "",
+        subtitle: ""
+      }
     })
 
     // Clear messages and query
@@ -293,7 +309,8 @@ export function ShoppingAssistant() {
       const conversation = conversationHistory[conversationIndex]
       setCurrentChatId(chatId)
       setMessages(conversation.messages || [])
-      setState({ ...conversation.state, show_results: (conversation.state.products.length > 0 ? true : false), wishlist: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [] })
+      // setFavorites(typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [])
+      setState({ ...conversation.state, show_results: (conversation.state.products.length > 0 ? true : false), favorites: typeof window !== 'undefined' && window.localStorage.getItem("wishlist") ? JSON.parse(window.localStorage.getItem("wishlist") || "[]") : [] })
       setCurrentView("products")
     }
   }
@@ -327,25 +344,27 @@ export function ShoppingAssistant() {
     debugger
     console.log('state?.favorites', state);
 
-    if (state?.wishlist.map((id: any) => id.id).includes(productId)) {
+    if (state?.favorites.map((id: any) => id.id).includes(productId)) {
       setState({
         ...state,
-        favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
-        wishlist: state?.wishlist?.filter((product: any) => product.id !== productId)
+        favorites: state?.favorites?.filter((product: any) => product.id !== productId),
+        // wishlist: state?.wishlist?.filter((product: any) => product.id !== productId)
       })
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem("wishlist", JSON.stringify(state?.wishlist?.filter((product: any) => product.id !== productId)))
+        window.localStorage.setItem("wishlist", JSON.stringify(state?.favorites?.filter((product: any) => product.id !== productId)))
       }
+      setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, state: { ...conversation.state, favorites: state?.favorites?.filter((product: any) => product.id !== productId) } } : conversation))
     }
     else {
       setState({
         ...state,
-        favorites: state?.favorites?.includes(productId) ? state?.favorites?.filter((id: any) => id !== productId) : [...state?.favorites, productId],
-        wishlist: [...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]
+        favorites: [...state?.favorites, ...state?.products?.filter((product: any) => product.id === productId)],
+        // wishlist: [...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]
       })
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem("wishlist", JSON.stringify([...state?.wishlist, ...state?.products?.filter((product: any) => product.id === productId)]))
+        window.localStorage.setItem("wishlist", JSON.stringify([...state?.favorites, ...state?.products?.filter((product: any) => product.id === productId)]))
       }
+      setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, state: { ...conversation.state, favorites: [...state?.favorites, ...state?.products?.filter((product: any) => product.id === productId)] } } : conversation))
     }
   }
 
@@ -425,7 +444,7 @@ export function ShoppingAssistant() {
       {
         name: "remove_from_canvas",
         type: "object[]",
-        description: "The id of the product to be edited",
+        description: "When user explicity ask to remove the product from the canvas, you need set values. Otherwise, set values as empty array",
         attributes: [
           {
             name: "product_id",
@@ -437,7 +456,7 @@ export function ShoppingAssistant() {
       {
         name: "move_to_wishlist",
         type: "object[]",
-        description: "The id of the product that needs to be moved to wishlist",
+        description: "When user explicity ask to move the product to wishlist, you need set values. Otherwise, set values as empty array",
         attributes: [
           {
             name: "product_id",
@@ -449,7 +468,7 @@ export function ShoppingAssistant() {
       {
         name: "remove_from_wishlist",
         type: "object[]",
-        description: "The id of the product that needs to be removed from wishlist",
+        description: "When user explicity ask to remove the product from wishlist, you need set values. Otherwise, set values as empty array",
         attributes: [
           {
             name: "product_id",
@@ -465,15 +484,17 @@ export function ShoppingAssistant() {
       if (args?.move_to_wishlist?.length > 0) {
         setState({
           ...state,
-          favorites: [...state?.favorites, ...args?.move_to_wishlist?.map((product: any) => product?.product_id)]
+          favorites: [...state?.favorites, ...state?.products?.filter((product: any) => args?.move_to_wishlist?.map((product: any) => product?.product_id)?.includes(product?.id))]
         })
+        window.localStorage.setItem("wishlist", JSON.stringify([...state?.favorites, ...state?.products?.filter((product: any) => args?.move_to_wishlist?.map((product: any) => product?.product_id)?.includes(product?.id))]))
       }
       if (args?.remove_from_wishlist?.length > 0) {
         let itemsToRemove = args?.remove_from_wishlist?.map((product: any) => product?.product_id)
         setState({
           ...state,
-          favorites: state?.favorites?.filter((id: any) => !itemsToRemove?.includes(id))
+          favorites: state?.favorites?.filter((product: any) => !itemsToRemove?.includes(product?.id))
         })
+        window.localStorage.setItem("wishlist", JSON.stringify(state?.favorites?.filter((product: any) => !itemsToRemove?.includes(product?.id))))
       }
       if (args?.remove_from_canvas?.length > 0) {
         debugger
@@ -505,7 +526,7 @@ export function ShoppingAssistant() {
     name: "list_products",
     description: "A list of products that are scraped from web",
     renderAndWaitForResponse: ({ status, respond, args }) => {
-      console.log(args, "argsargsargsargs")
+      // console.log(args, "argsargsargsargs")
 
       return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} onAccept={() => {
         if (respond) {
@@ -579,32 +600,31 @@ export function ShoppingAssistant() {
         ) : currentView === "wishlist" ? (
           <WishlistView
             clearAllWishlist={() => {
+              debugger
               setState({
                 ...state,
                 favorites: []
               })
-              setState({
-                ...state,
-                wishlist: []
-              })
+              setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, state: { ...conversation.state, favorites: [] } } : conversation))
               if (typeof window !== 'undefined') {
                 window.localStorage.setItem("wishlist", JSON.stringify([]))
               }
             }}
-            products={state?.wishlist}
+            products={state?.favorites}
             onExit={exitToProducts}
             onToggleWishlist={toggleWishlist}
             onDeleteProduct={deleteProduct}
           />
         ) : (
           <Canvas
+            canvasLogs={state?.canvas_logs}
             start={run}
             show_results={state?.show_results}
             report={state?.report}
             products={state?.products}
             isLoading={isLoading && state?.products?.length == 0}
             query={query}
-            wishlistLength={state?.wishlist?.length}
+            wishlistLength={state?.favorites?.length}
             wishlist={state?.favorites}
             onToggleWishlist={toggleWishlist}
             onDeleteProduct={deleteProduct}

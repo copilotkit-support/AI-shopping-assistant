@@ -53,10 +53,15 @@ interface CanvasProps {
   report: any
   show_results: boolean
   wishlistLength: number
+  canvasLogs: {
+    title: string
+    subtitle: string
+  }
 }
 
 export function Canvas({
   products,
+  canvasLogs,
   isLoading,
   query,  
   wishlist,
@@ -83,8 +88,8 @@ export function Canvas({
         </Button>
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#86ECE4] animate-spin mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-[#030507] mb-2">Searching across multiple stores...</h3>
-          <p className="text-[#575758]">Finding the best products and comparing prices</p>
+          <h3 className="text-lg font-semibold text-[#030507] mb-2">{(canvasLogs?.title == "" || canvasLogs?.title == undefined) ? "Searching across multiple stores..." : canvasLogs?.title} </h3>
+          <p className="text-[#575758]">{(canvasLogs?.subtitle == "" || canvasLogs?.subtitle == undefined) ? "Finding the best products and comparing prices" : canvasLogs?.subtitle}</p>
         </div>
       </div>
     )
@@ -161,7 +166,7 @@ export function Canvas({
           <ProductCard
             key={product.id}
             product={product}
-            isWishlisted={wishlist.includes(product.id)}
+            isWishlisted={wishlist.map((product: any) => product.id).includes(product.id)}
             onToggleWishlist={onToggleWishlist}
             onDeleteProduct={onDeleteProduct}
           />

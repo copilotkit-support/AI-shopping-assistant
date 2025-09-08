@@ -233,7 +233,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-[#030507] font-['Roobert'] flex flex-wrap items-start gap-2 text-left pr-8 break-words whitespace-normal">
                   <Lightbulb className="w-5 h-5 text-[#1B606F]" />
-                  AI Review Insights: {product.title}
+                  AI Review Insights
                 </DialogTitle>
               </DialogHeader>
 
@@ -255,15 +255,15 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                   <h3 className="font-semibold text-[#030507] mb-3">Review Sentiment Breakdown</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#1B606F] mb-1">{product?.review_sentiment?.positive_score * 100}%</div>
-                      <div className="text-sm text-[#575758]">Positive</div>
+                      <div className="text-2xl font-bold text-[#1B606F] mb-1">{(product?.review_sentiment?.positive_score * 100).toFixed(0)}%</div>
+                        <div className="text-sm text-[#575758]">Positive</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#858589] mb-1">{product?.review_sentiment?.neutral_score * 100}%</div>
+                      <div className="text-2xl font-bold text-[#858589] mb-1">{(product?.review_sentiment?.neutral_score * 100).toFixed(0)}%</div>
                       <div className="text-sm text-[#575758]">Neutral</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-[#FFA254] mb-1">{product?.review_sentiment?.negative_score * 100}%</div>
+                      <div className="text-2xl font-bold text-[#FFA254] mb-1">{(product?.review_sentiment?.negative_score * 100).toFixed(0)}%</div>
                       <div className="text-sm text-[#575758]">Negative</div>
                     </div>
                   </div>
@@ -317,7 +317,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                 </div>
 
                 <div className="text-xs text-[#858589] text-center">
-                  Analysis based on {product.rating_count} verified reviews from {product.product_url}
+                  Analysis based on {product.rating_count} verified reviews from Amazon, eBay, and Target.
                 </div>
               </div>
             </DialogContent>

@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from dotenv import load_dotenv
 import re
+from urllib.parse import unquote
 load_dotenv()
 
 class AgentState(CopilotKitState):
@@ -30,6 +31,7 @@ class AgentState(CopilotKitState):
     logs: List
     report: str
     show_results: bool
+    canvas_logs : dict = { "title" : "", "subtitle" : "" }
 
 
 async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
@@ -77,7 +79,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             })
         for product in state["favorites"]:
             wishlist_for_prompt.append({
-                "id" : product,
+                "name" : product['title'],
+                "id" : product['id'],
             })
         if(state["messages"][-1].type == 'tool'):
             if(state["messages"][-1].content == "Show more products"):
@@ -106,7 +109,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             response = await model.ainvoke(input=state['messages'])
             state["messages"].append(AIMessage(content=response.content, type="ai", id= state["messages"][-2].tool_calls[0]['id']))
             state["logs"] = []
-            state["show_results"] = True
+            if len(state["products"]) > 0:
+                state["show_results"] = True
             await copilotkit_emit_state(config, state)
                 
             return Command(
@@ -131,12 +135,12 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         if hasattr(response0, "tool_calls") and response0.tool_calls and response0.content == '':        
             state["logs"] = []
             await copilotkit_emit_state(config, state)
-                
+            state["messages"].append(AIMessage(id=str(uuid.uuid4()), type="ai",  tool_calls=response0.tool_calls, content=''))
             return Command(
                 goto=END,
                 update={
                     "buffer_products" : state["buffer_products"],
-                    "messages" : response0
+                    "messages" : state["messages"]
                 }
             )
         if (not response0.content.startswith('SEARCH')):
@@ -188,6 +192,10 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "message" : "Extracting the sites",
             "status" : "processing"
         })
+        state["canvas_logs"] = {
+            "title" : "Extracting the sites markdown content from the identified sites",
+            "subtitle" : "Tavily extraction in progress...."
+        }
         await copilotkit_emit_state(config, state)
         await asyncio.sleep(1)
         # 2) First extract pass
@@ -218,6 +226,12 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 if len(results_all) > 10:
                     break
                 print(f"Calling LLM for {url}")
+                state["canvas_logs"] = {
+                    "title" : f"Processing the Markdown content from {unquote(url)}",
+                    "subtitle" : "LLM processing in progress...."
+                }
+                await copilotkit_emit_state(config, state)
+                await asyncio.sleep(0)
                 data = call_llm(prompt)
                 print(f"Completed extracting {url}")
                 done = True
@@ -285,7 +299,11 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             update={
                 "messages": state["messages"],
                 "buffer_products" : state["buffer_products"],
-                "report" : None
+                "report" : None,
+                "canvas_logs" : {
+                    "title" : "Awaiting confirmation from the user",
+                    "subtitle" : ""
+                }
             }
         )
     except Exception as e:

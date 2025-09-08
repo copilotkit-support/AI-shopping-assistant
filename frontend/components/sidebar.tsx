@@ -199,7 +199,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
         {/* Chat Dropdown */}
         <div className="space-y-2">
           <DropdownMenu >
-            <DropdownMenuTrigger disabled={isLoading} asChild>
+            <DropdownMenuTrigger onBlur={() => {setEditingChatId(null), setEditingName("")}} disabled={isLoading} asChild>
               <Button 
                 variant="outline" 
                 className="w-full justify-between bg-[#F8F9FD] border-[#E8E8EF] hover:bg-[#F0F1F7] text-left h-auto p-3"
@@ -254,7 +254,7 @@ Would you like me to dive deeper into any specific aspect of this comparison?`
                               setEditingName("")
                             }
                           }}
-                          onBlur={() => handleRenameSubmit(chat.conversationId)}
+
                           className="flex-1 h-6 text-sm"
                           autoFocus
                         />
