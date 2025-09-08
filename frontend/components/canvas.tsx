@@ -88,8 +88,8 @@ export function Canvas({
         </Button>
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-[#86ECE4] animate-spin mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-[#030507] mb-2">{(canvasLogs?.title == "" || canvasLogs?.title == undefined) ? "Searching across multiple stores..." : canvasLogs?.title} </h3>
-          <p className="text-[#575758]">{(canvasLogs?.subtitle == "" || canvasLogs?.subtitle == undefined) ? "Finding the best products and comparing prices" : canvasLogs?.subtitle}</p>
+          <h3 className="text-lg font-semibold text-[#030507] mb-2 break-words">{(canvasLogs?.title == "" || canvasLogs?.title == undefined) ? "Searching across multiple stores..." : canvasLogs?.title} </h3>
+          <p className="text-[#575758] break-words">{(canvasLogs?.subtitle == "" || canvasLogs?.subtitle == undefined) ? "Finding the best products and comparing prices" : canvasLogs?.subtitle}</p>
         </div>
       </div>
     )
