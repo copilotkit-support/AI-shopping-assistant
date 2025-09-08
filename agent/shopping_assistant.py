@@ -106,6 +106,17 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
                         "messages" : state["messages"]
                     }
                 )            
+            if(state["messages"][-1].content == "Accepted"):
+                state["messages"].append(AIMessage(id=state["messages"][-2].tool_calls[0]['id'], type="ai",  content='The top 5 products have been added to the canvas.'))
+                state["logs"] = []
+                await copilotkit_emit_state(config, state)
+                return Command(
+                    goto=END,
+                    update={
+                        "buffer_products" : state["buffer_products"],
+                        "messages" : state["messages"]
+                    }
+                )      
             response = await model.ainvoke(input=state['messages'])
             state["messages"].append(AIMessage(content=response.content, type="ai", id= state["messages"][-2].tool_calls[0]['id']))
             state["logs"] = []

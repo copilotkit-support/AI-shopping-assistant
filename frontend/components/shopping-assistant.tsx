@@ -530,7 +530,7 @@ export function ShoppingAssistant() {
 
       return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} onAccept={() => {
         if (respond) {
-          respond(true)
+          respond("Accepted")
           setState({
             ...state,
             products: args?.products,

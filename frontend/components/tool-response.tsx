@@ -12,7 +12,7 @@ const DialogBox: React.FC<DialogBoxProps> = ({ contentList, onAccept, onReject, 
   return (
     <div className="border border-gray-300 rounded-lg shadow-lg w-54 max-h-96 overflow-hidden flex flex-col">
       <div className="overflow-y-auto p-4 flex-grow">
-      Here are the top 5 relevant items I found. Would you like to see them, retry, or show all found items?
+      I found and chose the top 5 items you asked for. Would you like to see them, retry, or show all found items?
       </div>
       <div className="flex justify-between p-4 border-t border-gray-200">
         <button disabled={isDisabled} onClick={onAccept} className="bg-green-500 text-white py-1 px-3 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200 text-sm bg-opacity-80 backdrop-filter backdrop-blur-lg">Accept</button>
