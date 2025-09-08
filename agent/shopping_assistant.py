@@ -302,7 +302,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 "report" : None,
                 "canvas_logs" : {
                     "title" : "Awaiting confirmation from the user",
-                    "subtitle" : ""
+                    "subtitle" : "Choose to accept, reject or show all products"
                 }
             }
         )
