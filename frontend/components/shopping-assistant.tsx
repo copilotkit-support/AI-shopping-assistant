@@ -254,7 +254,7 @@ export function ShoppingAssistant() {
     return words.length > 30 ? words.substring(0, 30) + '...' : words
   }
 
-  const handleCreateNewChat = (from="not-del") => {
+  const handleCreateNewChat = (from = "not-del") => {
     debugger
     const newChatId = from != "del" ? Math.max(...conversationHistory.map((c: any) => c.conversationId)) + 1 : 1
     const newChat = {
@@ -622,7 +622,7 @@ export function ShoppingAssistant() {
             show_results={state?.show_results}
             report={state?.report}
             products={state?.products}
-            isLoading={isLoading && state?.products?.length == 0}
+            isLoading={(isLoading && state?.products?.length == 0) || (state?.show_results == false)}
             query={query}
             wishlistLength={state?.favorites?.length}
             wishlist={state?.favorites}
