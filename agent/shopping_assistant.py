@@ -133,11 +133,19 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             )
         
         messages = state["messages"]
-        a = "Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web."
         system_message = f"""You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}.
         #IMPORTANT NOTE:
         -If the user asks any general question, you can just reply with some general replies. 
-        -If user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'. DO NOT TRIGGER the edit_product_canvas tool when user asks to search for any other product. Instead reply with 'SEARCH'."""
+        -If user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'. DO NOT TRIGGER the edit_product_canvas tool when user asks to search for any other product. Instead reply with 'SEARCH'.
+        
+        EXAMPLES:
+        - Get me some amazing Dishwashers.
+        - Get me some amazing Laptops.
+            The above 2 shoule return 'SEARCH'
+        - Move LG G5 to wishlist.
+        - Remove LG G5 to wishlist.
+            THe above 2 should trigger the edit_product_canvas tool.
+        """
         # system_message = ''
         state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
         response0 = await model.bind_tools([
@@ -303,10 +311,11 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             
         state["buffer_products"] = updated_products
         # state["buffer_products"] = results_all
-        
+        chat_name = await generate_name_for_chat(query)
         await copilotkit_emit_state(config, state)
-        state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"]}, "id": str(uuid.uuid4())}], type="ai",  content=''))
+        state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"], "chat_name" : chat_name}, "id": str(uuid.uuid4())}], type="ai",  content=''))
         state["logs"] = []
+        await copilotkit_emit_state(config, state)
         state["show_results"] = True
         await copilotkit_emit_state(config, state)
         return Command(
@@ -359,6 +368,21 @@ async def generate_report(products: List[Dict[str, Any]]) -> str:
     )
     return response.choices[0].message.content
 
+
+
+async def generate_name_for_chat(query: str) -> str:
+    """
+    Generate a report for the given products.
+    """
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_MSG2},
+            {"role": "user", "content": query}
+        ]
+    )
+    return response.choices[0].message.content
 
 workflow = StateGraph(AgentState)
 workflow.add_node("chat", chat_node)
@@ -489,6 +513,13 @@ Rules:
 JSON_SCHEMA:
 {json.dumps(REPORT_SCHEMA)}
 
+"""
+
+SYSTEM_MSG2 = """
+You are a name generator for a chat. You will be given a user query and you need to generate a name for the chat based on the query.
+# RULES:
+- The output should strictly contain only the name for the chat. DO NOT ADD ANYTHING ELSE.
+- The name should be of appropriate length. Maximum 3 or 4 words.
 """
 
 

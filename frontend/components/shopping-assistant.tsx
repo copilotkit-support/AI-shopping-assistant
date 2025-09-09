@@ -192,7 +192,7 @@ export function ShoppingAssistant() {
   })
   const { messages, setMessages } = useCopilotMessagesContext();
   useEffect(() => {
-    debugger
+    // debugger
     console.log(conversationHistory[0], "conversationHistory");
     // console.log(JSON.parse(window.localStorage.getItem("conversationHistory") || "[]")[0]?.messages, "conversationHistory");
     // setState(conversationHistory[0]?.state)
@@ -528,7 +528,8 @@ export function ShoppingAssistant() {
     renderAndWaitForResponse: ({ status, respond, args }) => {
       // console.log(args, "argsargsargsargs")
 
-      return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} onAccept={() => {
+      return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} 
+      onAccept={() => {
         if (respond) {
           respond("Accepted")
           setState({
@@ -536,9 +537,12 @@ export function ShoppingAssistant() {
             products: args?.products,
             buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length)
           })
+          setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
           // setProducts(args?.products)
         }
-      }} onReject={() => { if (respond) respond("Rejected") }} onNeedInfo={() => {
+      }} 
+       onReject={() => { if (respond) respond("Rejected") }} 
+      onNeedInfo={() => {
         if (respond) {
           respond("Show more products")
           setState({
@@ -546,6 +550,7 @@ export function ShoppingAssistant() {
             products: args?.buffer_products?.slice(0, 10),
             buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length)
           })
+          setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
           // setProducts(args?.buffer_products?.slice(0, 10))
         }
       }} />
@@ -622,7 +627,7 @@ export function ShoppingAssistant() {
             show_results={state?.show_results}
             report={state?.report}
             products={state?.products}
-            isLoading={(isLoading && state?.products?.length == 0) || (state?.show_results == false)}
+            isLoading={isLoading && !state?.show_results}
             query={query}
             wishlistLength={state?.favorites?.length}
             wishlist={state?.favorites}
