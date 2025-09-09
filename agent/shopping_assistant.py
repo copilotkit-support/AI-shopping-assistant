@@ -133,8 +133,11 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
             )
         
         messages = state["messages"]
-        
-        system_message = f"You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}. If the user asks any general question, you can just reply with some general replies. But if user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'."
+        a = "Also, if user asks for any other product, you can just reply with 'No products found'. Do not try to search for the products in the web."
+        system_message = f"""You are a shoppning assistant. You will be provided with the current products in canvas and wishlist. You will be able to edit the products in canvas and wishlist. If the products are not in the canvas or wishlist, you can just reply with 'No products found'. The current products in canvas are {json.dumps(products_for_prompt)} and the current products in wishlist are {json.dumps(wishlist_for_prompt)}.
+        #IMPORTANT NOTE:
+        -If the user asks any general question, you can just reply with some general replies. 
+        -If user ask to search for any other product without explicitly saying to look in the canvas or wishlist, you need to just reply with 'SEARCH'. DO NOT TRIGGER the edit_product_canvas tool when user asks to search for any other product. Instead reply with 'SEARCH'."""
         # system_message = ''
         state["copilotkit"]["actions"] = list(filter(lambda x: x['name'] == "edit_product_canvas", state["copilotkit"]["actions"]))
         response0 = await model.bind_tools([
@@ -173,7 +176,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         query = state["messages"][-1].content
         max_search_results = 8
         target_follow = 6
-
+        state["show_results"] = False
+        await copilotkit_emit_state(config, state)
         tv = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
         results_all: List[Dict[str, Any]] = []
         total_mappings_list = []
