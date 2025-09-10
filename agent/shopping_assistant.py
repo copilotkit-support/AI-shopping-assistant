@@ -48,7 +48,12 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
         else:
             # Use CopilotKit's custom config functions to properly set up streaming
             config = copilotkit_customize_config(config, emit_messages=False, emit_tool_calls=True)
-            
+        state["canvas_logs"] = {
+            "title" : f"Analyzing user query",
+            "subtitle" : "Deciding to run product search or not"
+        }
+        await copilotkit_emit_state(config, state)
+        await asyncio.sleep(0)
         if not os.getenv("TAVILY_API_KEY"):
             raise RuntimeError("Missing TAVILY_API_KEY")
         if not os.getenv("OPENAI_API_KEY"):
@@ -289,12 +294,12 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     if len(products_from_each_site[retailer]) > 2:
                         break
                     print(f"Calling LLM for {url}")
-                    state["canvas_logs"] = {
-                        "title" : "Structuring product content from site's markdown",
-                        "subtitle" : "LLM processing in progress...."
-                    }
-                    await copilotkit_emit_state(config, state)
-                    await asyncio.sleep(2)
+                    # state["canvas_logs"] = {
+                    #     "title" : "Structuring product content from site's markdown",
+                    #     "subtitle" : "LLM processing in progress...."
+                    # }
+                    # await copilotkit_emit_state(config, state)
+                    # await asyncio.sleep(2)
                     state["canvas_logs"] = {
                         "title" : f"Processing the Markdown content from {unquote(url)}",
                         "subtitle" : "LLM processing in progress...."
@@ -325,32 +330,6 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 print(f"Task failed with exception: {result}")
             elif result is None:
                 print("Condition met in one of the tasks")
-            # Handle successful results if needed
-        
-        
-        
-        
-        # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
-        # target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
-        # if target_listing_pdps:
-        #     ext2 = tv.extract(target_listing_pdps, extract_depth="advanced", include_images=True)
-        #     for item in ext2.get("results", []):
-        #         url = item["url"]
-        #         raw = item.get("raw_content") or ""
-        #         if not raw:
-        #             continue
-        #         assist = parse_target_structured(raw)
-        #         prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=True)
-        #         try:
-        #             data = call_llm(prompt)
-        #             data["source_url"] = url
-        #             data["retailer"] = "target.com"
-        #             # Keep exactly one product for PDP
-        #             if data.get("products"):
-        #                 data["products"] = data["products"][:1]
-        #                 results_all.append(data)
-        #         except Exception as e:
-        #             print(f"Target PDP enrich failed for {url}: {e}")
         
         
         results_all = combine_products_from_sites(products_from_each_site)
@@ -365,11 +344,13 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
         print(len(updated_products), "updated_products here")
         state["buffer_products"] = updated_products
         # state["buffer_products"] = results_all
+        print("HERE")
         chat_name = await generate_name_for_chat(query)
-        await copilotkit_emit_state(config, state)
+        print(chat_name, "chat_name here")
+        # await copilotkit_emit_state(config, state)
         state["messages"].append(AIMessage(id=str(uuid.uuid4()), tool_calls=[{"name": "list_products", "args": {"products": state["buffer_products"][:5], "buffer_products" : state["buffer_products"], "chat_name" : chat_name}, "id": str(uuid.uuid4())}], type="ai",  content=''))
         state["logs"] = []
-        await copilotkit_emit_state(config, state)
+        # await copilotkit_emit_state(config, state)
         state["show_results"] = True
         await copilotkit_emit_state(config, state)
         return Command(
@@ -428,15 +409,19 @@ async def generate_name_for_chat(query: str) -> str:
     """
     Generate a report for the given products.
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_MSG2},
-            {"role": "user", "content": query}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_MSG2},
+                {"role": "user", "content": query}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(e, "error")
+        raise e
 
 workflow = StateGraph(AgentState)
 workflow.add_node("agent", agent_node)

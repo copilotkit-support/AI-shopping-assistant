@@ -528,32 +528,42 @@ export function ShoppingAssistant() {
     renderAndWaitForResponse: ({ status, respond, args }) => {
       // console.log(args, "argsargsargsargs")
 
-      return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))} 
-      onAccept={() => {
-        if (respond) {
-          respond("Accepted")
-          setState({
-            ...state,
-            products: args?.products,
-            buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length)
-          })
-          setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
-          // setProducts(args?.products)
-        }
-      }} 
-       onReject={() => { if (respond) respond("Rejected") }} 
-      onNeedInfo={() => {
-        if (respond) {
-          respond("Show more products")
-          setState({
-            ...state,
-            products: args?.buffer_products?.slice(0, 10),
-            buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length)
-          })
-          setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
-          // setProducts(args?.buffer_products?.slice(0, 10))
-        }
-      }} />
+      return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))}
+        onAccept={() => {
+          if (respond) {
+            respond("Accepted")
+            setState({
+              ...state,
+              products: args?.products,
+              buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length),
+              logs: []
+            })
+            setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
+            // setProducts(args?.products)
+          }
+        }}
+        onReject={() => {
+          if (respond) {
+            respond("Rejected")
+            setState({
+              ...state,
+              logs: []
+            })
+          }
+        }}
+        onNeedInfo={() => {
+          if (respond) {
+            respond("Show more products")
+            setState({
+              ...state,
+              products: args?.buffer_products?.slice(0, 10),
+              buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length),
+              logs: []
+            })
+            setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
+            // setProducts(args?.buffer_products?.slice(0, 10))
+          }
+        }} />
     }
 
   })
