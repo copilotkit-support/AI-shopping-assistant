@@ -300,12 +300,12 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     # }
                     # await copilotkit_emit_state(config, state)
                     # await asyncio.sleep(2)
-                    state["canvas_logs"] = {
-                        "title" : f"Processing the Markdown content from {unquote(url)}",
-                        "subtitle" : "LLM processing in progress...."
-                    }
-                    await copilotkit_emit_state(config, state)
-                    await asyncio.sleep(0)
+                    # state["canvas_logs"] = {
+                    #     "title" : f"Processing the Markdown content from {unquote(url)}",
+                    #     "subtitle" : "LLM processing in progress...."
+                    # }
+                    # await copilotkit_emit_state(config, state)
+                    # await asyncio.sleep(0)
                     data = call_llm(prompt)
                     print(f"Completed extracting {url}")
                     done = True

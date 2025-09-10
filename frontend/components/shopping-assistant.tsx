@@ -538,7 +538,14 @@ export function ShoppingAssistant() {
               buffer_products: args?.buffer_products.slice(5, args?.buffer_products.length),
               logs: []
             })
-            setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
+            let conversations = conversationHistory
+            conversations.forEach((conversation: any) => {
+              if (conversation.conversationId === currentChatId) {
+                conversation.chatName = args?.chat_name
+              }
+            })
+            setConversationHistory(conversations)
+            // setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
             // setProducts(args?.products)
           }
         }}
@@ -560,7 +567,15 @@ export function ShoppingAssistant() {
               buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length),
               logs: []
             })
-            setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
+            
+            let conversations = conversationHistory
+            conversations.forEach((conversation: any) => {
+              if (conversation.conversationId === currentChatId) {
+                conversation.chatName = args?.chat_name
+              }
+            })
+            setConversationHistory(conversations)
+            // setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
             // setProducts(args?.buffer_products?.slice(0, 10))
           }
         }} />
