@@ -17,6 +17,9 @@ from jsonschema import Draft202012Validator, ValidationError
 from dotenv import load_dotenv
 import re
 from urllib.parse import unquote
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+import random
 load_dotenv()
 
 class AgentState(CopilotKitState):
@@ -34,7 +37,7 @@ class AgentState(CopilotKitState):
     canvas_logs : dict = { "title" : "", "subtitle" : "" }
 
 
-async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
+async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
     """
     This is the chat node of the agent.
     It is a function that takes in the state of the agent and the config and returns the state of the agent.
@@ -182,7 +185,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         
         
         query = state["messages"][-1].content
-        max_search_results = 8
+        max_search_results = 6
         target_follow = 6
         state["show_results"] = False
         await copilotkit_emit_state(config, state)
@@ -198,18 +201,21 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         state["logs"][-1]["status"] = "completed"
         await copilotkit_emit_state(config, state)
         # 1) Broad search across retailers
-        search = tv.search(
-            query=query,
-            include_domains=RETAILERS,
-            include_answer=False,
-            include_images=False,
-            include_raw_content=False,
-            search_depth="advanced",
-            max_results=max_search_results,
-        )
-        urls = [r["url"] for r in search.get("results", []) if r.get("url")]
-        if not urls:
-            return []
+        urls = {}
+        for retailer in RETAILERS:
+            search = tv.search(
+                query=query,
+                include_domains=[retailer],
+                include_answer=False,
+                include_images=False,
+                include_raw_content=False,
+                search_depth="advanced",
+                max_results=max_search_results,
+            )
+                
+            urls[retailer] = [r["url"] for r in search.get("results", []) if r.get("url")]
+            if not urls[retailer]:
+                continue
 
         state["logs"].append({
             "message" : "Extracting the sites",
@@ -222,7 +228,33 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         await copilotkit_emit_state(config, state)
         await asyncio.sleep(1)
         # 2) First extract pass
-        ext1 = tv.extract(urls, extract_depth="advanced", include_images=True)
+        
+        
+        def extract_urls(urls: List[str], retailer: str) -> Dict[str, Any]:
+            try:
+                print(f"Extracting urls for {retailer}. Started at {datetime.now()}")
+                ext1 = tv.extract(urls, extract_depth="advanced", include_images=True, timeout=120)
+                return [ext1, retailer]
+            except Exception as e:
+                print(f"Error extracting urls: {e}")
+                return None
+        ext_results = {}
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {executor.submit(extract_urls, urls[retailer], retailer) : retailer for retailer in RETAILERS}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                ext_results[result[1]] = result[0].get("results", [])
+                if result == None:
+                    print("Condition met! Cancelling remaining tasks...")
+                    # Cancel all futures not yet started
+                    for f in futures:
+                        f.cancel()
+                    break
+
+        
+        
+        
         state["logs"][-1]["status"] = "completed"
         await copilotkit_emit_state(config, state)
         
@@ -234,73 +266,95 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         })
         await copilotkit_emit_state(config, state)
         # await asyncio.sleep(1)
-        for item in ext1.get("results", []):
-            url = item["url"]
-            raw = item.get("raw_content") or ""
-            if not raw:
-                continue
-            modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
-            total_mappings_list.extend(mappings_list)
-            dom = retailer_of(url)
-            detail_hint = is_pdp(url)
-            assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
-            prompt = build_llm_prompt(modiefied_text, url, assist=assist, detail_hint=detail_hint)
-            try:
-                if len(results_all) > 10:
-                    break
-                print(f"Calling LLM for {url}")
-                state["canvas_logs"] = {
-                    "title" : f"Processing the Markdown content from {unquote(url)}",
-                    "subtitle" : "LLM processing in progress...."
-                }
-                await copilotkit_emit_state(config, state)
-                await asyncio.sleep(0)
-                data = call_llm(prompt)
-                print(f"Completed extracting {url}")
-                done = True
-            except Exception as e:
-                # If LLM fails, skip this page
-                print(f"LLM 1st-pass failed for {url}: {e}")
-                continue
-
-            data.setdefault("source_url", url)
-            data.setdefault("retailer", dom)
-
-            # Enforce PDP URLs only for Target to avoid promo tiles
-            if "target.com" in dom:
-                pdps = filter_only_pdps(data.get("products", []))
-                data["products"] = pdps
-                # If thin or empty, harvest PDPs from listing HTML
-                if not pdps:
-                    harvested = find_target_pdps_in_html(raw, url)
-                    target_listing_pdps.extend(harvested[:target_follow])
-
-            results_all += data["products"]
-
+        products_from_each_site= {
+            "target.com" : [],
+            "amazon.com" : [],
+            "ebay.com" : []
+        }
         
-        
-        # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
-        target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
-        if target_listing_pdps:
-            ext2 = tv.extract(target_listing_pdps, extract_depth="advanced", include_images=True)
-            for item in ext2.get("results", []):
+        async def process_data(ext_results1: Dict[str, Any], retailer: str) -> str:
+            print(f"Processing data for {retailer}. Started at {datetime.now()}")
+            for item in ext_results1:
                 url = item["url"]
                 raw = item.get("raw_content") or ""
                 if not raw:
-                    continue
-                assist = parse_target_structured(raw)
-                prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=True)
+                    return None
+                modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
+                total_mappings_list.extend(mappings_list)
+                dom = retailer_of(url)
+                detail_hint = is_pdp(url)
+                assist = parse_target_structured(modiefied_text) if "target.com" in dom else None
+                prompt = build_llm_prompt(modiefied_text, url, assist=assist, detail_hint=detail_hint)
                 try:
+                    if len(products_from_each_site[retailer]) > 2:
+                        break
+                    print(f"Calling LLM for {url}")
+                    state["canvas_logs"] = {
+                        "title" : "Structuring product content from site's markdown",
+                        "subtitle" : "LLM processing in progress...."
+                    }
+                    await copilotkit_emit_state(config, state)
+                    await asyncio.sleep(2)
+                    state["canvas_logs"] = {
+                        "title" : f"Processing the Markdown content from {unquote(url)}",
+                        "subtitle" : "LLM processing in progress...."
+                    }
+                    await copilotkit_emit_state(config, state)
+                    await asyncio.sleep(0)
                     data = call_llm(prompt)
-                    data["source_url"] = url
-                    data["retailer"] = "target.com"
-                    # Keep exactly one product for PDP
-                    if data.get("products"):
-                        data["products"] = data["products"][:1]
-                        results_all.append(data)
+                    print(f"Completed extracting {url}")
+                    done = True
                 except Exception as e:
-                    print(f"Target PDP enrich failed for {url}: {e}")
+                    # If LLM fails, skip this page
+                    print(f"LLM 1st-pass failed for {url}: {e}")
+                    continue
+
+                data.setdefault("source_url", url)
+                data.setdefault("retailer", dom)
+                products_from_each_site[retailer] += data["products"]
+            return "Completed"
+
         
+        
+        # for retailer in ext_results:
+        tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                print(f"Task failed with exception: {result}")
+            elif result is None:
+                print("Condition met in one of the tasks")
+            # Handle successful results if needed
+        
+        
+        
+        
+        # 3) If Target listing PDPs found, do a second extract pass focused on PDPs
+        # target_listing_pdps = list(dict.fromkeys([u for u in target_listing_pdps if is_pdp(u)]))[:target_follow]
+        # if target_listing_pdps:
+        #     ext2 = tv.extract(target_listing_pdps, extract_depth="advanced", include_images=True)
+        #     for item in ext2.get("results", []):
+        #         url = item["url"]
+        #         raw = item.get("raw_content") or ""
+        #         if not raw:
+        #             continue
+        #         assist = parse_target_structured(raw)
+        #         prompt = build_llm_prompt(raw, url, assist=assist, detail_hint=True)
+        #         try:
+        #             data = call_llm(prompt)
+        #             data["source_url"] = url
+        #             data["retailer"] = "target.com"
+        #             # Keep exactly one product for PDP
+        #             if data.get("products"):
+        #                 data["products"] = data["products"][:1]
+        #                 results_all.append(data)
+        #         except Exception as e:
+        #             print(f"Target PDP enrich failed for {url}: {e}")
+        
+        
+        results_all = combine_products_from_sites(products_from_each_site)
+        print(len(results_all), "results_all here")
         
         for item in results_all:
             item["id"] = str(uuid.uuid4())
@@ -308,7 +362,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         await copilotkit_emit_state(config, state)
         
         updated_products = apply_url_mappings_to_products(results_all, total_mappings_list)
-            
+        print(len(updated_products), "updated_products here")
         state["buffer_products"] = updated_products
         # state["buffer_products"] = results_all
         chat_name = await generate_name_for_chat(query)
@@ -332,7 +386,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> AgentState:
         )
     except Exception as e:
         print(e, "error")
-        if e.code == "context_length_exceeded":
+        if hasattr(e, 'code') and e.code == "context_length_exceeded":
             error_message = AIMessage(content="Context length limit exceeded. Please try your query in a new chat.", id=str(uuid.uuid4()), type="ai")
             state["logs"] = []
             state["messages"].append(error_message)
@@ -385,10 +439,10 @@ async def generate_name_for_chat(query: str) -> str:
     return response.choices[0].message.content
 
 workflow = StateGraph(AgentState)
-workflow.add_node("chat", chat_node)
-workflow.set_entry_point("chat")
-workflow.add_edge(START, "chat")
-workflow.add_edge("chat", END)
+workflow.add_node("agent", agent_node)
+workflow.set_entry_point("agent")
+workflow.add_edge(START, "agent")
+workflow.add_edge("agent", END)
 
 memory = MemorySaver()
 graph = workflow.compile(checkpointer=memory)
@@ -396,7 +450,7 @@ graph = workflow.compile(checkpointer=memory)
 
 
 
-RETAILERS = ["amazon.com"]
+RETAILERS = ["target.com", "amazon.com", "ebay.com"]
 
 PDP_PATTERNS = {
     "amazon.com": re.compile(r"amazon\.com/.+?/dp/"),
@@ -520,6 +574,7 @@ You are a name generator for a chat. You will be given a user query and you need
 # RULES:
 - The output should strictly contain only the name for the chat. DO NOT ADD ANYTHING ELSE.
 - The name should be of appropriate length. Maximum 3 or 4 words.
+- The name of the chat should be professional and should not be too casual.
 """
 
 
@@ -845,3 +900,68 @@ def apply_url_mappings_to_products(products: list[dict], mappings: list[list[str
         updated_products.append(new_product)
 
     return updated_products
+
+
+def combine_products_from_sites(products_from_each_site: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    """
+    Combine exactly 5 products from all retailers, ensuring at least one product from each retailer.
+    Returns only 5 products total.
+
+    Args:
+        products_from_each_site: Dict with site names as keys and list of products as values
+
+    Returns:
+        List of exactly 5 combined products
+    """
+    retailers = list(products_from_each_site.keys())
+    selected_products = []
+
+    # Step 1: Take exactly one product from each retailer
+    for retailer in retailers:
+        products = products_from_each_site[retailer]
+        print(len(products), f"products from {retailer} here")
+        if products:  # Make sure there are products available
+            # Take the first product from this retailer
+            selected_products.append(products[0])
+
+    # Step 2: Take 2 more products randomly from any retailer
+    # Create a pool of remaining products from all retailers
+    remaining_pool = []
+    for retailer in retailers:
+        products = products_from_each_site[retailer]
+        if len(products) > 1:  # Skip the first product since we already took it
+            remaining_pool.extend(products[1:])
+
+    # Randomly select 2 more products from the remaining pool
+    if len(remaining_pool) >= 2:
+        additional_products = random.sample(remaining_pool, 2)
+        selected_products.extend(additional_products)
+        remaining_pool = [p for p in remaining_pool if p not in additional_products]
+    elif len(remaining_pool) == 1:
+        # If only 1 remaining product, take it
+        selected_products.extend(remaining_pool)
+    # If no remaining products, we'll have only the guaranteed one from each retailer
+
+    # Step 3: If we don't have exactly 5 products, fill with more from any retailer
+    while len(selected_products) < 5:
+        # Try to get more products from retailers that have them
+        for retailer in retailers:
+            products = products_from_each_site[retailer]
+            # Find products not already selected
+            used_indices = set()
+            for selected in selected_products:
+                if selected in products:
+                    used_indices.add(products.index(selected))
+
+            available_products = [p for i, p in enumerate(products) if i not in used_indices]
+            if available_products:
+                selected_products.append(random.choice(available_products))
+                break
+
+    # Step 4: Randomly shuffle the final 5 products
+    random.shuffle(selected_products)
+    print(len(selected_products), "selected_products here")
+    selected_products.extend(remaining_pool)
+    print(len(selected_products), "final_products here")
+    # Return only the first 5 products
+    return selected_products

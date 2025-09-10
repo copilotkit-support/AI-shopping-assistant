@@ -195,7 +195,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-[#030507] font-['Roobert']">{product.price_text}</span>
             <Badge variant="outline" className="text-xs">
-              amazon.com
+              {new URL(product.product_url).hostname.replace("www.", "")}
             </Badge>
           </div>
         </div>
@@ -256,7 +256,7 @@ export function ProductCard({ product, isWishlisted, onToggleWishlist, onDeleteP
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-[#1B606F] mb-1">{(product?.review_sentiment?.positive_score * 100).toFixed(0)}%</div>
-                        <div className="text-sm text-[#575758]">Positive</div>
+                      <div className="text-sm text-[#575758]">Positive</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-[#858589] mb-1">{(product?.review_sentiment?.neutral_score * 100).toFixed(0)}%</div>
