@@ -277,14 +277,28 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "ebay.com" : []
         }
         
-        async def process_data(ext_results1: Dict[str, Any], retailer: str) -> str:
+        async def process_data(ext_results1: Dict[str, Any], retailer: str, retailer_counters: Dict[str, Dict[str, int]]) -> str:
             print(f"Processing data for {retailer}. Started at {datetime.now()}")
             for item in ext_results1:
                 url = item["url"]
                 raw = item.get("raw_content") or ""
                 if not raw:
                     return None
-                modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
+                product_base = ""
+                image_base = ""
+                if retailer == "target.com":
+                    product_base = "https://tgt.com/url{}"
+                    image_base = "https://tgt.com/img/url{}"
+                elif retailer == "amazon.com":
+                    product_base = "https://amzn.com/url{}"
+                    image_base = "https://amzn.com/img/url{}"
+                elif retailer == "ebay.com":
+                    product_base = "https://ebay.com/url{}"
+                    image_base = "https://ebay.com/img/url{}"
+                modiefied_text, mappings_list, updated_product_counter, updated_image_counter = replace_urls_with_product_and_image_links(text= raw, product_base= product_base, image_base=image_base, product_counter=retailer_counters[retailer]["product"], image_counter=retailer_counters[retailer]["image"])
+                # Update the counters for the next iteration
+                retailer_counters[retailer]["product"] = updated_product_counter
+                retailer_counters[retailer]["image"] = updated_image_counter
                 total_mappings_list.extend(mappings_list)
                 dom = retailer_of(url)
                 detail_hint = is_pdp(url)
@@ -294,18 +308,18 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     if len(products_from_each_site[retailer]) > 2:
                         break
                     print(f"Calling LLM for {url}")
-                    # state["canvas_logs"] = {
-                    #     "title" : "Structuring product content from site's markdown",
-                    #     "subtitle" : "LLM processing in progress...."
-                    # }
-                    # await copilotkit_emit_state(config, state)
-                    # await asyncio.sleep(2)
-                    # state["canvas_logs"] = {
-                    #     "title" : f"Processing the Markdown content from {unquote(url)}",
-                    #     "subtitle" : "LLM processing in progress...."
-                    # }
-                    # await copilotkit_emit_state(config, state)
-                    # await asyncio.sleep(0)
+                    state["canvas_logs"] = {
+                        "title" : "Structuring product content from site's markdown",
+                        "subtitle" : "LLM processing in progress...."
+                    }
+                    await copilotkit_emit_state(config, state)
+                    await asyncio.sleep(2)
+                    state["canvas_logs"] = {
+                        "title" : f"Processing the Markdown content from {unquote(url)}",
+                        "subtitle" : "LLM processing in progress...."
+                    }
+                    await copilotkit_emit_state(config, state)
+                    await asyncio.sleep(0)
                     data = await call_llm(prompt)
                     print(f"Completed extracting {url}")
                     done = True
@@ -319,33 +333,42 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 products_from_each_site[retailer] += data["products"]
             return "Completed"
 
-        async def placeholder_parallel_task() -> str:
-            """
-            Placeholder function that runs in parallel with the main processing tasks.
-            Replace this with your actual function logic.
-            """
-            print("Placeholder parallel task started")
-            try:
-                # TODO: Add your actual function logic here
-                await asyncio.sleep(1)  # Placeholder delay
-                print("Placeholder parallel task completed")
-                return "Placeholder task completed successfully"
-            except Exception as e:
-                print(f"Placeholder parallel task failed: {e}")
-                return f"Placeholder task failed: {e}"
+        # async def placeholder_parallel_task() -> str:
+        #     """
+        #     Placeholder function that runs in parallel with the main processing tasks.
+        #     Replace this with your actual function logic.
+        #     """
+        #     print("Placeholder parallel task started")
+        #     try:
+        #         # TODO: Add your actual function logic here
+        #         await asyncio.sleep(1)  # Placeholder delay
+        #         print("Placeholder parallel task completed")
+        #         return "Placeholder task completed successfully"
+        #     except Exception as e:
+        #         print(f"Placeholder parallel task failed: {e}")
+        #         return f"Placeholder task failed: {e}"
 
         
         
+        # Initialize counters for each retailer
+        retailer_counters = {
+            "target.com": {"product": 0, "image": 0},
+            "amazon.com": {"product": 0, "image": 0},
+            "ebay.com": {"product": 0, "image": 0}
+        }
+
         # for retailer in ext_results:
-        tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
-        tasks.append(placeholder_parallel_task())  # Add the placeholder task to run in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for retailer in ext_results:
+            await process_data(ext_results[retailer], retailer, retailer_counters)  
+        # tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
+        # tasks.append(placeholder_parallel_task())  # Add the placeholder task to run in parallel
+        # results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                print(f"Task failed with exception: {result}")
-            elif result is None:
-                print("Condition met in one of the tasks")
+        # for i, result in enumerate(results):
+        #     if isinstance(result, Exception):
+        #         print(f"Task failed with exception: {result}")
+        #     elif result is None:
+        #         print("Condition met in one of the tasks")
         
         
         results_all = combine_products_from_sites(products_from_each_site)
@@ -786,6 +809,8 @@ def replace_urls_with_product_and_image_links(
     product_base: str = "https://amzn.com/url{}",
     image_base: str = "https://amzn.com/img/url{}",
     exempt_prefixes: tuple = (),
+    product_counter: int = 0,
+    image_counter: int = 0,
 ):
     """
     Replace URLs in `text` with unique placeholders:
@@ -797,6 +822,13 @@ def replace_urls_with_product_and_image_links(
       - URLs starting with any `exempt_prefixes` are left untouched.
       - Trailing punctuation like '),.;:!?]' is preserved.
 
+    Parameters
+    ----------
+    product_counter : int, default 0
+        Current counter value for product URLs. Should be passed to maintain uniqueness across calls.
+    image_counter : int, default 0
+        Current counter value for image URLs. Should be passed to maintain uniqueness across calls.
+
     Returns
     -------
     new_text : str
@@ -804,6 +836,10 @@ def replace_urls_with_product_and_image_links(
     mappings_list : list[list[str, str]]
         Pairs of [original_url, replacement_url] for all *non-exempt* URLs
         (includes both image and non-image mappings).
+    final_product_counter : int
+        Updated product counter value after processing.
+    final_image_counter : int
+        Updated image counter value after processing.
     """
     # Robust-enough matcher for http/https inside natural text
     url_re = re.compile(r'\bhttps?://[^\s<>()"\']+', re.IGNORECASE)
@@ -824,12 +860,12 @@ def replace_urls_with_product_and_image_links(
     mapping: dict[str, str] = {}
     pairs: list[list[str, str]] = []
 
-    # Independent counters to keep numbering separate & clear
-    product_counter = 0
-    image_counter = 0
+    # Use the passed counter values
+    current_product_counter = product_counter
+    current_image_counter = image_counter
 
     def _repl(m: re.Match) -> str:
-        nonlocal product_counter, image_counter
+        nonlocal current_product_counter, current_image_counter
         token = m.group(0)
 
         # Separate trailing punctuation often glued to URLs in prose
@@ -846,11 +882,11 @@ def replace_urls_with_product_and_image_links(
         # Assign or reuse a replacement
         if url not in mapping:
             if _is_image_url(url):
-                image_counter += 1
-                repl_url = image_base.format(image_counter)
+                current_image_counter += 1
+                repl_url = image_base.format(current_image_counter)
             else:
-                product_counter += 1
-                repl_url = product_base.format(product_counter)
+                current_product_counter += 1
+                repl_url = product_base.format(current_product_counter)
             mapping[url] = repl_url
             pairs.append([repl_url, url])
         else:
@@ -859,8 +895,7 @@ def replace_urls_with_product_and_image_links(
         return repl_url + trailing
 
     new_text = url_re.sub(_repl, text)
-    return new_text, pairs
-
+    return new_text, pairs, current_product_counter, current_image_counter
 
 
 def apply_url_mappings_to_products(products: list[dict], mappings: list[list[str, str]]) -> list[dict]:
