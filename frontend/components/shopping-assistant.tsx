@@ -545,6 +545,8 @@ export function ShoppingAssistant() {
               }
             })
             setConversationHistory(conversations)
+            setCurrentChatId(currentChatId)
+            console.log(currentChatId, "currentChatId");
             // setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
             // setProducts(args?.products)
           }
@@ -574,7 +576,10 @@ export function ShoppingAssistant() {
                 conversation.chatName = args?.chat_name
               }
             })
+            console.log(currentChatId, "currentChatId");
+            
             setConversationHistory(conversations)
+            setCurrentChatId(currentChatId)
             // setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))
             // setProducts(args?.buffer_products?.slice(0, 10))
           }
