@@ -359,6 +359,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
 
         # for retailer in ext_results:
         for retailer in ext_results:
+            if(retailer == "target.com"):
+                continue
             await process_data(ext_results[retailer], retailer, retailer_counters)  
         # tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
         # tasks.append(placeholder_parallel_task())  # Add the placeholder task to run in parallel
