@@ -35,6 +35,8 @@ def main():
         host="0.0.0.0",
         port=port,
         reload=True,
+        timeout_keep_alive=900,  # 15 minutes = 900 seconds
+        timeout_graceful_shutdown=900,  # 15 minutes graceful shutdown
         reload_dirs=(
             ["."] +
             (["../../../sdk-python/copilotkit"]
