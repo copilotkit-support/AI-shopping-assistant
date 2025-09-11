@@ -48,8 +48,14 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
         else:
             # Use CopilotKit's custom config functions to properly set up streaming
             config = copilotkit_customize_config(config, emit_messages=False, emit_tool_calls=True)
+        content = state["messages"][-1].content
+        if(content in ["Show more products", "Rejected", "Accepted"]):
+            content = "Parsing your request"
+        else:
+            content = f'Parsing your request : "{content}"'
+        
         state["canvas_logs"] = {
-            "title" : f"Analyzing user query",
+            "title" : content,
             "subtitle" : "Deciding to run product search or not"
         }
         await copilotkit_emit_state(config, state)
@@ -70,7 +76,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             )
         model = ChatOpenAI(model="gpt-4o-mini")
         state["logs"].append({
-            "message" : "Analyzing user query",
+            "message" : "Parsing your request",
             "status" : "processing"
         })
         await copilotkit_emit_state(config, state)
@@ -227,7 +233,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "status" : "processing"
         })
         state["canvas_logs"] = {
-            "title" : "Extracting the sites markdown content from the identified sites",
+            "title" : "Checking Amazon, eBay and Target for matching products",
             "subtitle" : "Tavily extraction in progress...."
         }
         await copilotkit_emit_state(config, state)
@@ -309,13 +315,13 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                         break
                     print(f"Calling LLM for {url}")
                     state["canvas_logs"] = {
-                        "title" : "Structuring product content from site's markdown",
+                        "title" : "Analyzing the product content from the site",
                         "subtitle" : "LLM processing in progress...."
                     }
                     await copilotkit_emit_state(config, state)
                     await asyncio.sleep(2)
                     state["canvas_logs"] = {
-                        "title" : f"Processing the Markdown content from {unquote(url)}",
+                        "title" : f"Extracting product titles, images and specs from {unquote(url)}",
                         "subtitle" : "LLM processing in progress...."
                     }
                     await copilotkit_emit_state(config, state)
