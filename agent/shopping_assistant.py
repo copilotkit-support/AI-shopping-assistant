@@ -71,7 +71,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     **state,
-                    "report" : json.loads(result)
+                    "report" : json.loads(result),
+                    "logs" : []
                 }
             )
         model = ChatOpenAI(model="gpt-4o-mini")
@@ -106,7 +107,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"]
+                        "messages" : state["messages"],
+                        "logs" : []
                     }
                 )
             if(state["messages"][-1].content == "Rejected"):
@@ -117,7 +119,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"]
+                        "messages" : state["messages"],
+                        "logs" : []
                     }
                 )            
             if(state["messages"][-1].content == "Accepted"):
@@ -128,7 +131,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"]
+                        "messages" : state["messages"],
+                        "logs" : []
                     }
                 )      
             response = await model.ainvoke(input=state['messages'])
@@ -142,7 +146,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "messages" : state["messages"],
-                    "buffer_products" : state["buffer_products"]
+                    "buffer_products" : state["buffer_products"],
+                    "logs" : []
                 }
             )
         
@@ -176,7 +181,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "buffer_products" : state["buffer_products"],
-                    "messages" : state["messages"]
+                    "messages" : state["messages"],
+                    "logs" : []
                 }
             )
         if (not response0.content.startswith('SEARCH')):
@@ -187,7 +193,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "buffer_products" : state["buffer_products"],
-                    "messages" : state["messages"]
+                    "messages" : state["messages"],
+                    "logs" : []
                 }
             )
         
@@ -409,7 +416,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 "canvas_logs" : {
                     "title" : "Awaiting confirmation from the user",
                     "subtitle" : "Choose to accept, reject or show all products"
-                }
+                },
+                "logs" : []
             }
         )
     except Exception as e:
@@ -426,6 +434,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             goto=END,
             update={
                 "messages": state["messages"],
+                "logs" : []
             }
         )
     
