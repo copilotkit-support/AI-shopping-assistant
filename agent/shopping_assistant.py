@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urljoin
 import uuid
 from tavily import TavilyClient
-from openai import OpenAI
+from openai import AsyncOpenAI
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from dotenv import load_dotenv
@@ -306,7 +306,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     # }
                     # await copilotkit_emit_state(config, state)
                     # await asyncio.sleep(0)
-                    data = call_llm(prompt)
+                    data = await call_llm(prompt)
                     print(f"Completed extracting {url}")
                     done = True
                 except Exception as e:
@@ -319,10 +319,26 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 products_from_each_site[retailer] += data["products"]
             return "Completed"
 
+        async def placeholder_parallel_task() -> str:
+            """
+            Placeholder function that runs in parallel with the main processing tasks.
+            Replace this with your actual function logic.
+            """
+            print("Placeholder parallel task started")
+            try:
+                # TODO: Add your actual function logic here
+                await asyncio.sleep(1)  # Placeholder delay
+                print("Placeholder parallel task completed")
+                return "Placeholder task completed successfully"
+            except Exception as e:
+                print(f"Placeholder parallel task failed: {e}")
+                return f"Placeholder task failed: {e}"
+
         
         
         # for retailer in ext_results:
         tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
+        tasks.append(placeholder_parallel_task())  # Add the placeholder task to run in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         for i, result in enumerate(results):
@@ -392,8 +408,8 @@ async def generate_report(products: List[Dict[str, Any]]) -> str:
     """
     Generate a report for the given products.
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = client.chat.completions.create(
+    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    response = await client.chat.completions.create(
         model="gpt-4o-mini",
         response_format= {"type": "json_object"},
         messages=[
@@ -410,8 +426,8 @@ async def generate_name_for_chat(query: str) -> str:
     Generate a report for the given products.
     """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        response = client.chat.completions.create(
+        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_MSG2},
@@ -738,9 +754,9 @@ HINTS:
 RAW_WEB_PAGE:
 {raw[:200000]}"""
 
-def call_llm(prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    resp = client.chat.completions.create(
+async def call_llm(prompt: str, model: str = "gpt-4o-mini") -> Dict[str, Any]:
+    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    resp = await client.chat.completions.create(
         model="gpt-5-mini",
         response_format={"type": "json_object"},
         messages=[
