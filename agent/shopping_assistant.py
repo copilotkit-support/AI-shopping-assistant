@@ -593,6 +593,7 @@ Rules:
 - Provide at least 5 "key_insights_from_reviews" and "review_sentiment" (label: positive|neutral|negative, score in [0,1]).
 - Parse price_value and price_currency when possible, else set null.
 - Output ONLY minified JSON, no commentary.
+- If the content has a product detail which is not relevant to other product details, then don't include that odd product detail in the product details.
 """
 SYSTEM_MSG1 = f"""You are a Products report generator
 Return STRICT JSON matching the provided JSON Schema

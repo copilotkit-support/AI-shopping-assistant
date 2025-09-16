@@ -80,25 +80,32 @@ export function ReportView({ products, onExit, searchQuery, report, isLoading }:
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-gradient-to-r from-[#86ECCE] to-[#FFF388] p-4 rounded-lg">
-                  <h3 className="font-semibold text-[#030507] mb-2">🏆 Top Pick: {report?.top_pick?.name}</h3>
-                  <p className="text-sm text-[#030507]">
-                    {report?.top_pick?.summary}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border border-[#1B606F] rounded-lg p-4">
-                    <h4 className="font-semibold text-[#1B606F] mb-2">✅ Best For Performance</h4>
-                    <p className="text-sm text-[#575758]">
-                      {report?.best_performance?.name} - {report?.best_performance?.summary}
-                    </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Top Pick */}
+                  <div className="group rounded-xl p-[1px] bg-gradient-to-br from-[#86ECCE] via-[#FFF388] to-[#FFD6A5]">
+                    <div className="rounded-xl p-4 h-full shadow-sm transition-all group-hover:shadow-md group-hover:-translate-y-0.5 bg-gradient-to-br from-[#E9FFF4] via-[#FFFBE6] to-[#E9F2FF]">
+                      <h4 className="font-semibold text-[#030507] mb-1">🏆 Top Pick</h4>
+                      <div className="text-sm text-[#030507] font-semibold mb-1">{report?.top_pick?.name}</div>
+                      <p className="text-sm text-[#575758]">{report?.top_pick?.summary}</p>
+                    </div>
                   </div>
-                  <div className="border border-[#FFA254] rounded-lg p-4">
-                    <h4 className="font-semibold text-[#FFA254] mb-2">💰 Best Value</h4>
-                    <p className="text-sm text-[#575758]">
-                      {report?.best_value_for_money?.name} - {report?.best_value_for_money?.summary}
-                    </p>
+
+                  {/* Best Performance */}
+                  <div className="group rounded-xl p-[1px] bg-gradient-to-br from-[#86ECE4] via-[#1B606F] to-[#B3E5FC]">
+                    <div className="rounded-xl p-4 h-full shadow-sm transition-all group-hover:shadow-md group-hover:-translate-y-0.5 bg-gradient-to-br from-[#E6FCF8] via-[#E6F3FF] to-[#F0E9FF]">
+                      <h4 className="font-semibold text-[#1B606F] mb-1">✅ Best For Performance</h4>
+                      <div className="text-sm text-[#030507] font-semibold mb-1">{report?.best_performance?.name}</div>
+                      <p className="text-sm text-[#575758]">{report?.best_performance?.summary}</p>
+                    </div>
+                  </div>
+
+                  {/* Best Value */}
+                  <div className="group rounded-xl p-[1px] bg-gradient-to-br from-[#FFD6A5] via-[#FFA254] to-[#FFC371]">
+                    <div className="rounded-xl p-4 h-full shadow-sm transition-all group-hover:shadow-md group-hover:-translate-y-0.5 bg-gradient-to-br from-[#FFF1E6] via-[#FFE6F7] to-[#FFF8E1]">
+                      <h4 className="font-semibold text-[#FFA254] mb-1">💰 Best Value</h4>
+                      <div className="text-sm text-[#030507] font-semibold mb-1">{report?.best_value_for_money?.name}</div>
+                      <p className="text-sm text-[#575758]">{report?.best_value_for_money?.summary}</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

@@ -530,6 +530,7 @@ export function ShoppingAssistant() {
 
       return <DialogBox isDisabled={respond == undefined} contentList={args?.products?.map((product: any) => ({ title: product.title, url: product.product_url }))}
         onAccept={() => {
+          debugger
           if (respond) {
             respond("Accepted")
             setState({
@@ -561,6 +562,7 @@ export function ShoppingAssistant() {
           }
         }}
         onNeedInfo={() => {
+          debugger
           if (respond) {
             respond("Show more products")
             setState({
@@ -569,7 +571,7 @@ export function ShoppingAssistant() {
               buffer_products: args?.buffer_products.slice(10, args?.buffer_products.length),
               logs: []
             })
-            
+
             let conversations = conversationHistory
             conversations.forEach((conversation: any) => {
               if (conversation.conversationId === currentChatId) {
@@ -577,7 +579,7 @@ export function ShoppingAssistant() {
               }
             })
             console.log(currentChatId, "currentChatId");
-            
+
             setConversationHistory(conversations)
             setCurrentChatId(currentChatId)
             // setConversationHistory((prev: any) => prev.map((conversation: any) => conversation.conversationId === currentChatId ? { ...conversation, chatName: args?.chat_name } : conversation))

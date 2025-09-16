@@ -91,6 +91,9 @@ export function Canvas({
           <h3 className="text-lg font-semibold text-[#030507] mb-2 break-words">{(canvasLogs?.title == "" || canvasLogs?.title == undefined) ? "Processing your request..." : canvasLogs?.title} </h3>
           <p className="text-[#575758] break-words">{(canvasLogs?.subtitle == "" || canvasLogs?.subtitle == undefined) ? "" : canvasLogs?.subtitle}</p>
         </div>
+        <div className="absolute bottom-6 inset-x-0 text-center">
+          <p className="text-muted-foreground">May take around 5-10 minutes as it searches and compares items from different sites to find you the best options available</p>
+        </div>
       </div>
     )
   }
