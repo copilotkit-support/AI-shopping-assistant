@@ -48,14 +48,8 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
         else:
             # Use CopilotKit's custom config functions to properly set up streaming
             config = copilotkit_customize_config(config, emit_messages=False, emit_tool_calls=True)
-        content = state["messages"][-1].content
-        if(content in ["Show more products", "Rejected", "Accepted"]):
-            content = "Parsing your request"
-        else:
-            content = f'Parsing your request : "{content}"'
-        
         state["canvas_logs"] = {
-            "title" : content,
+            "title" : f"Parsing your request",
             "subtitle" : "Deciding to run product search or not"
         }
         await copilotkit_emit_state(config, state)
@@ -71,13 +65,12 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     **state,
-                    "report" : json.loads(result),
-                    "logs" : []
+                    "report" : json.loads(result)
                 }
             )
         model = ChatOpenAI(model="gpt-4o-mini")
         state["logs"].append({
-            "message" : "Parsing your request",
+            "message" : "Analyzing user query",
             "status" : "processing"
         })
         await copilotkit_emit_state(config, state)
@@ -107,8 +100,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"],
-                        "logs" : []
+                        "messages" : state["messages"]
                     }
                 )
             if(state["messages"][-1].content == "Rejected"):
@@ -119,8 +111,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"],
-                        "logs" : []
+                        "messages" : state["messages"]
                     }
                 )            
             if(state["messages"][-1].content == "Accepted"):
@@ -131,8 +122,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     goto=END,
                     update={
                         "buffer_products" : state["buffer_products"],
-                        "messages" : state["messages"],
-                        "logs" : []
+                        "messages" : state["messages"]
                     }
                 )      
             response = await model.ainvoke(input=state['messages'])
@@ -146,8 +136,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "messages" : state["messages"],
-                    "buffer_products" : state["buffer_products"],
-                    "logs" : []
+                    "buffer_products" : state["buffer_products"]
                 }
             )
         
@@ -181,8 +170,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "buffer_products" : state["buffer_products"],
-                    "messages" : state["messages"],
-                    "logs" : []
+                    "messages" : state["messages"]
                 }
             )
         if (not response0.content.startswith('SEARCH')):
@@ -193,8 +181,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 goto=END,
                 update={
                     "buffer_products" : state["buffer_products"],
-                    "messages" : state["messages"],
-                    "logs" : []
+                    "messages" : state["messages"]
                 }
             )
         
@@ -290,6 +277,11 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "ebay.com" : []
         }
         
+        retailer_counters = {
+            "target.com": {"product": 0, "image": 0},
+            "amazon.com": {"product": 0, "image": 0},
+            "ebay.com": {"product": 0, "image": 0}
+        }
         async def process_data(ext_results1: Dict[str, Any], retailer: str, retailer_counters: Dict[str, Dict[str, int]]) -> str:
             print(f"Processing data for {retailer}. Started at {datetime.now()}")
             for item in ext_results1:
@@ -309,9 +301,10 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     product_base = "https://ebay.com/url{}"
                     image_base = "https://ebay.com/img/url{}"
                 modiefied_text, mappings_list, updated_product_counter, updated_image_counter = replace_urls_with_product_and_image_links(text= raw, product_base= product_base, image_base=image_base, product_counter=retailer_counters[retailer]["product"], image_counter=retailer_counters[retailer]["image"])
-                # Update the counters for the next iteration
+                # modiefied_text, mappings_list = replace_urls_with_product_and_image_links(raw)
                 retailer_counters[retailer]["product"] = updated_product_counter
                 retailer_counters[retailer]["image"] = updated_image_counter
+                # total_mappings_list.extend(mappings_list)
                 total_mappings_list.extend(mappings_list)
                 dom = retailer_of(url)
                 detail_hint = is_pdp(url)
@@ -321,18 +314,18 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                     if len(products_from_each_site[retailer]) > 2:
                         break
                     print(f"Calling LLM for {url}")
-                    state["canvas_logs"] = {
-                        "title" : "Analyzing the product content from the site",
-                        "subtitle" : "LLM processing in progress...."
-                    }
-                    await copilotkit_emit_state(config, state)
-                    await asyncio.sleep(2)
-                    state["canvas_logs"] = {
-                        "title" : f"Extracting product titles, images and specs from {unquote(url)}",
-                        "subtitle" : "LLM processing in progress...."
-                    }
-                    await copilotkit_emit_state(config, state)
-                    await asyncio.sleep(0)
+                    # state["canvas_logs"] = {
+                    #     "title" : "Structuring product content from site's markdown",
+                    #     "subtitle" : "LLM processing in progress...."
+                    # }
+                    # await copilotkit_emit_state(config, state)
+                    # await asyncio.sleep(2)
+                    # state["canvas_logs"] = {
+                    #     "title" : f"Processing the Markdown content from {unquote(url)}",
+                    #     "subtitle" : "LLM processing in progress...."
+                    # }
+                    # await copilotkit_emit_state(config, state)
+                    # await asyncio.sleep(0)
                     data = await call_llm(prompt)
                     print(f"Completed extracting {url}")
                     done = True
@@ -346,44 +339,63 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 products_from_each_site[retailer] += data["products"]
             return "Completed"
 
-        # async def placeholder_parallel_task() -> str:
-        #     """
-        #     Placeholder function that runs in parallel with the main processing tasks.
-        #     Replace this with your actual function logic.
-        #     """
-        #     print("Placeholder parallel task started")
-        #     try:
-        #         # TODO: Add your actual function logic here
-        #         await asyncio.sleep(1)  # Placeholder delay
-        #         print("Placeholder parallel task completed")
-        #         return "Placeholder task completed successfully"
-        #     except Exception as e:
-        #         print(f"Placeholder parallel task failed: {e}")
-        #         return f"Placeholder task failed: {e}"
+        async def logs_function():
+            print("Placeholder parallel task started")
+            try:
+                print("logs started")
+                # Build a flat list of URLs from ext_results
+                urls_only = []
+                try:
+                    for retailer, items in (ext_results or {}).items():
+                        if not isinstance(items, list):
+                            continue
+                        for item in items:
+                            candidate_url = item.get("url") if isinstance(item, dict) else (item if isinstance(item, str) else None)
+                            if isinstance(candidate_url, str) and candidate_url.startswith("http"):
+                                urls_only.append(candidate_url)
+                except Exception as inner_e:
+                    print(f"Error extracting urls_only: {inner_e}")
+
+                print(f"Extracted {len(urls_only)} URLs")
+                while True :
+                    for url in urls_only:
+                        if(random.random() < 0.3):
+                            state["canvas_logs"]={
+                                "title" : f"Processing the Markdown content from {unquote(url)}",
+                                "subtitle" : "LLM processing in progress...."
+                            }
+                        elif(random.random() < 0.6):
+                            state["canvas_logs"] = {
+                                "title" : f"Summarizing pros & cons for products from {unquote(url)}",
+                                "subtitle" : "Summrazing different product characteristics"
+                            }
+                        else:
+                            state["canvas_logs"] = {
+                                "title" : f"Articulating product titles, images and specs from {unquote(url)}",
+                                "subtitle" : "LLM processing in progress...."
+                            }
+                        
+                        await copilotkit_emit_state(config, state)
+                        await asyncio.sleep(4)
+            except Exception as e:
+                print(f"Placeholder parallel task failed: {e}")
+                # return f"Placeholder task failed: {e}"
 
         
-        
-        # Initialize counters for each retailer
-        retailer_counters = {
-            "target.com": {"product": 0, "image": 0},
-            "amazon.com": {"product": 0, "image": 0},
-            "ebay.com": {"product": 0, "image": 0}
-        }
-
         # for retailer in ext_results:
-        for retailer in ext_results:
-            # if(retailer == "target.com"):
-            #     continue
-            await process_data(ext_results[retailer], retailer, retailer_counters)  
-        # tasks = [process_data(ext_results[retailer], retailer) for retailer in ext_results]
+        tasks = [asyncio.create_task(process_data(ext_results[retailer], retailer, retailer_counters)) for retailer in ext_results]
         # tasks.append(placeholder_parallel_task())  # Add the placeholder task to run in parallel
-        # results = await asyncio.gather(*tasks, return_exceptions=True)
+        gather_task = asyncio.gather(*tasks, return_exceptions=True)
+        logs_task = asyncio.create_task(logs_function())
+        results = await gather_task
         
-        # for i, result in enumerate(results):
-        #     if isinstance(result, Exception):
-        #         print(f"Task failed with exception: {result}")
-        #     elif result is None:
-        #         print("Condition met in one of the tasks")
+        logs_task.cancel()
+        
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                print(f"Task failed with exception: {result}")
+            elif result is None:
+                print("Condition met in one of the tasks")
         
         
         results_all = combine_products_from_sites(products_from_each_site)
@@ -416,8 +428,7 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
                 "canvas_logs" : {
                     "title" : "Awaiting confirmation from the user",
                     "subtitle" : "Choose to accept, reject or show all products"
-                },
-                "logs" : []
+                }
             }
         )
     except Exception as e:
@@ -434,7 +445,6 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> AgentState:
             goto=END,
             update={
                 "messages": state["messages"],
-                "logs" : []
             }
         )
     
@@ -588,7 +598,7 @@ Rules:
 - If input is a PDP, emit exactly one rich product object.
 - If input is a listing, emit up to ~20 DISTINCT products, each with a PDP product_url (not homepage or category).
 - Include title, product_url, price_text; add image_urls, availability, rating_value, rating_count, model, sku.
-- If image_urls is not present, then return empty array.
+- If image_urls is not present, then return empty array. But try to find the image urls from the text data. They have 'img' keyword in the data which is provided to you.
 - Provide "pros" and "cons" as array of strings. Make sure to have 2 pros and 2 cons. If you cant find pros and cons from the text data, Generate it yourself.
 - Provide at least 5 "key_insights_from_reviews" and "review_sentiment" (label: positive|neutral|negative, score in [0,1]).
 - Parse price_value and price_currency when possible, else set null.
@@ -914,6 +924,7 @@ def replace_urls_with_product_and_image_links(
 
     new_text = url_re.sub(_repl, text)
     return new_text, pairs, current_product_counter, current_image_counter
+
 
 
 def apply_url_mappings_to_products(products: list[dict], mappings: list[list[str, str]]) -> list[dict]:
